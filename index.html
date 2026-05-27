@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Widget Grist</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <link rel="stylesheet" href="widget.css" />
+</head>
+<body>
+
+  <div id="loading">⏳ En attente des données Grist…</div>
+  <div id="error"></div>
+
+  <div id="config-panel" hidden>
+    <h3>⚙️ Configuration</h3>
+    <label for="cfg-title">Titre affiché</label>
+    <input type="text" id="cfg-title" placeholder="Ex : Mes données" />
+    <label for="cfg-color">Couleur d'accentuation</label>
+    <input type="color" id="cfg-color" value="#16a34a" />
+    <button id="cfg-save">💾 Enregistrer</button>
+  </div>
+
+  <div id="widget-container" hidden>
+    <h2 id="widget-title"></h2>
+    <div id="widget-output"></div>
+  </div>
+
+  <span id="version-badge">v1.0.0</span>
+
+  <script src="widget.js"></script>
+</body>
+</html>
