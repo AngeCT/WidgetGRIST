@@ -2,31 +2,97 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Widget Grist</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nouvelle Itération</title>
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <link rel="stylesheet" href="widget.css" />
 </head>
 <body>
 
-  <div id="loading">⏳ En attente des données Grist…</div>
-  <div id="error"></div>
+  <div id="loading">⏳ Chargement…</div>
 
   <div id="config-panel" hidden>
     <h3>⚙️ Configuration</h3>
     <label for="cfg-title">Titre affiché</label>
-    <input type="text" id="cfg-title" placeholder="Ex : Mes données" />
+    <input type="text" id="cfg-title" placeholder="Nouvelle Itération" />
     <label for="cfg-color">Couleur d'accentuation</label>
-    <input type="color" id="cfg-color" value="#16a34a" />
+    <input type="color" id="cfg-color" value="#f59e0b" />
+    <label for="cfg-table-iteration">Table Iteration</label>
+    <input type="text" id="cfg-table-iteration" placeholder="Iteration" />
+    <label for="cfg-table-workgroup">Table WorkGroup</label>
+    <input type="text" id="cfg-table-workgroup" placeholder="WorkGroup" />
+    <label for="cfg-table-software">Table Software</label>
+    <input type="text" id="cfg-table-software" placeholder="Software" />
     <button id="cfg-save">💾 Enregistrer</button>
   </div>
 
   <div id="widget-container" hidden>
-    <h2 id="widget-title"></h2>
-    <div id="widget-output"></div>
+    <header>
+      <h2 id="widget-title"></h2>
+    </header>
+
+    <form id="iteration-form" novalidate>
+
+      <div class="field">
+        <label for="nom">Nom <span class="required">*</span></label>
+        <input type="text" id="nom" placeholder="Ex : Itération Q1 2026" />
+        <span class="error-msg" id="err-nom">Ce champ est obligatoire.</span>
+      </div>
+
+      <div class="field">
+        <label for="workgroup">WorkGroup <span class="required">*</span></label>
+        <select id="workgroup">
+          <option value="">— Sélectionner un WorkGroup —</option>
+        </select>
+        <span class="error-msg" id="err-workgroup">Veuillez sélectionner un WorkGroup.</span>
+      </div>
+
+      <div class="field">
+        <label for="format">Format <span class="required">*</span></label>
+        <input type="text" id="format" placeholder="Ex : Sprint, Trimestre…" />
+        <span class="error-msg" id="err-format">Ce champ est obligatoire.</span>
+      </div>
+
+      <div class="field">
+        <label for="debut">Début <span class="required">*</span></label>
+        <input type="datetime-local" id="debut" />
+        <span class="error-msg" id="err-debut">Ce champ est obligatoire.</span>
+      </div>
+
+      <div class="field">
+        <label for="fin">Fin <span class="required">*</span></label>
+        <input type="datetime-local" id="fin" />
+        <span class="error-msg" id="err-fin">Ce champ est obligatoire.</span>
+      </div>
+
+      <div class="field">
+        <label for="lien">Lien</label>
+        <input type="url" id="lien" placeholder="https://…" />
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Description de l'itération…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Softwares</label>
+        <div class="multi-select" id="softwares-container">
+          <span class="placeholder">⏳ Chargement…</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="reset">🔄 Réinitialiser</button>
+        <button type="submit" id="submit-btn">✅ Créer l'itération</button>
+      </div>
+
+    </form>
+
+    <div id="feedback" hidden></div>
   </div>
 
-  <span id="version-badge">v1.0.0</span>
+  <span id="version-badge"></span>
 
   <script src="widget.js"></script>
 </body>
