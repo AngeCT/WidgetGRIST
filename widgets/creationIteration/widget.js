@@ -5,7 +5,7 @@ document.getElementById("version-badge").textContent = `v${VERSION}`;
 // ─── Config par défaut ────────────────────────────────────────────────────────
 const DEFAULT_OPTIONS = {
   title:          "Nouvelle Itération",
-  color:          "#f59e0b",
+  color:          "#3ddc84", // Couleur TOSIT par défaut
   tableIteration: "Iteration",
   tableWorkgroup: "WorkGroup",
   tableSoftware:  "Software",
@@ -24,7 +24,6 @@ const el = {
   submitBtn:          document.getElementById("submit-btn"),
   formatSelect:       document.getElementById("format"),
   softwaresContainer: document.getElementById("softwares-container"),
-  cfgTitle:           document.getElementById("cfg-title"),
   cfgColor:           document.getElementById("cfg-color"),
   cfgTableIteration:  document.getElementById("cfg-table-iteration"),
   cfgTableWorkgroup:  document.getElementById("cfg-table-workgroup"),
@@ -56,9 +55,8 @@ function showFeedback(msg, type) {
 // ─── Options ──────────────────────────────────────────────────────────────────
 function applyOptions(opts) {
   options = { ...DEFAULT_OPTIONS, ...opts };
-  el.widgetTitle.textContent = options.title;
+  el.widgetTitle.textContent = options.title; // Titre fixe depuis les options
   document.documentElement.style.setProperty("--accent", options.color);
-  el.cfgTitle.value          = options.title;
   el.cfgColor.value          = options.color;
   el.cfgTableIteration.value = options.tableIteration;
   el.cfgTableWorkgroup.value = options.tableWorkgroup;
@@ -66,7 +64,6 @@ function applyOptions(opts) {
 }
 
 document.getElementById("cfg-save").addEventListener("click", async () => {
-  options.title          = el.cfgTitle.value.trim()          || DEFAULT_OPTIONS.title;
   options.color          = el.cfgColor.value                  || DEFAULT_OPTIONS.color;
   options.tableIteration = el.cfgTableIteration.value.trim() || DEFAULT_OPTIONS.tableIteration;
   options.tableWorkgroup = el.cfgTableWorkgroup.value.trim()  || DEFAULT_OPTIONS.tableWorkgroup;
@@ -136,7 +133,6 @@ function initWorkgroupCombo() {
       div.className   = "combobox-option";
       div.textContent = wg.name;
       div.dataset.id  = wg.id;
-      // mousedown avant blur : on peut sélectionner sans perdre le focus
       div.addEventListener("mousedown", e => {
         e.preventDefault();
         selectWorkgroup(wg);
@@ -152,7 +148,6 @@ function initWorkgroupCombo() {
     hiddenInput.value = wg.id;
     dropdown.hidden   = true;
     activeIndex       = -1;
-    // Effacer l'état invalide si l'utilisateur vient de corriger
     searchInput.classList.remove("invalid");
     document.getElementById("err-workgroup").classList.remove("visible");
   }
@@ -160,15 +155,13 @@ function initWorkgroupCombo() {
   function closeDropdown() {
     dropdown.hidden = true;
     activeIndex     = -1;
-    // Si rien n'a été sélectionné mais du texte reste, on efface pour éviter la confusion
     if (!hiddenInput.value && searchInput.value.trim()) {
       searchInput.value = "";
     }
   }
 
-  // Filtrage en startsWith à chaque frappe
   searchInput.addEventListener("input", () => {
-    hiddenInput.value = ""; // reset la sélection si l'utilisateur retape
+    hiddenInput.value = "";
     const query = searchInput.value.trim().toLowerCase();
 
     if (!query) {
@@ -182,7 +175,6 @@ function initWorkgroupCombo() {
     renderDropdown(filtered);
   });
 
-  // Navigation clavier : flèches, Entrée, Échap
   searchInput.addEventListener("keydown", e => {
     const opts = getOpts();
 
@@ -211,12 +203,10 @@ function initWorkgroupCombo() {
     if (activeIndex >= 0) opts[activeIndex].scrollIntoView({ block: "nearest" });
   });
 
-  // Fermeture au clic extérieur (avec délai pour laisser mousedown agir)
   searchInput.addEventListener("blur", () => {
     setTimeout(closeDropdown, 150);
   });
 
-  // Réouverture si on re-focus avec du texte déjà tapé mais sans sélection
   searchInput.addEventListener("focus", () => {
     const query = searchInput.value.trim().toLowerCase();
     if (query && !hiddenInput.value) {
@@ -259,7 +249,7 @@ async function loadFormats() {
 
 // ─── Softwares ────────────────────────────────────────────────────────────────
 async function loadSoftwares() {
-  el.softwaresContainer.innerHTML = "";
+  el.softwaresContainer.innerHTML = '<span class="placeholder">⏳ Chargement…</span>';
   try {
     const table = await grist.docApi.fetchTable(options.tableSoftware);
     const names = table.Name ?? [];
@@ -267,6 +257,7 @@ async function loadSoftwares() {
       el.softwaresContainer.innerHTML = '<span class="placeholder">Aucun logiciel disponible.</span>';
       return;
     }
+    el.softwaresContainer.innerHTML = ""; // Vider le loader
     table.id.forEach((id, i) => {
       const label = document.createElement("label");
       const cb    = Object.assign(document.createElement("input"), {
@@ -283,7 +274,6 @@ async function loadSoftwares() {
 }
 
 // ─── Validation ───────────────────────────────────────────────────────────────
-// workgroup : la valeur est dans le hidden input, mais l'état visuel va sur workgroup-search
 const VISUAL_ID_MAP = { "workgroup": "workgroup-search" };
 
 const REQUIRED_FIELDS = [
@@ -374,18 +364,18 @@ el.form.addEventListener("reset", () => {
   clearValidation();
   el.feedback.hidden    = true;
   el.feedback.className = "";
-  // Les hidden inputs ne sont pas réinitialisés par form.reset() — reset manuel
   document.getElementById("workgroup").value           = "";
   document.getElementById("workgroup-search").value    = "";
   document.getElementById("workgroup-dropdown").hidden = true;
 });
 
 // ─── Initialisation Grist ─────────────────────────────────────────────────────
-initWorkgroupCombo(); // une seule fois, avant tout chargement de données
+initWorkgroupCombo();
 
 grist.ready({
   requiredAccess: "full",
   onEditOptions() {
+    // applique les options actuelles avant d'ouvrir
     applyOptions(options);
     el.configPanel.classList.add("open");
   },

@@ -5,18 +5,18 @@
   padding: 0;
 }
 
-/* ── Variables ──────────────────────────────────────────────────────────────── */
+/* ── Variables (Thème TOSIT) ────────────────────────────────────────────────── */
 :root {
-  --accent:      #f59e0b;
-  --bg:          #1a1a2e;
-  --surface:     #16213e;
-  --surface-alt: #0f3460;
-  --text:        #e0e0e0;
-  --text-muted:  #9ca3af;
-  --border:      #2d3748;
-  --danger:      #ef4444;
-  --success:     #10b981;
-  --radius:      8px;
+  --accent:      #3ddc84;
+  --bg:          #111827;
+  --surface:     #1F2937;
+  --surface-alt: #374151;
+  --text:        #E5E7EB;
+  --text-muted:  #9CA3AF;
+  --border:      #374151;
+  --danger:      #F87171;
+  --success:     #34D399;
+  --radius:      4px;
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────────── */
@@ -44,24 +44,23 @@ body {
   padding: 16px;
   margin-bottom: 16px;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   display: none;
 }
 
-#config-panel.open {
-  display: flex;
-}
+#config-panel.open { display: flex; }
 
 #config-panel h3 {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
 }
 
 #config-panel label {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
 }
 
@@ -70,10 +69,14 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  padding: 7px 10px;
+  padding: 8px 12px;
   font-size: 0.9rem;
   width: 100%;
-  margin-bottom: 4px;
+}
+
+#config-panel input[type="color"] {
+  padding: 4px;
+  height: 38px;
 }
 
 #config-panel input:focus {
@@ -82,51 +85,51 @@ body {
 }
 
 #cfg-save {
-  margin-top: 6px;
+  margin-top: 8px;
   background: var(--accent);
   color: #111;
   border: none;
   border-radius: var(--radius);
-  padding: 8px 16px;
+  padding: 9px 16px;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
   align-self: flex-start;
+  transition: opacity 0.2s;
 }
 
 #cfg-save:hover { opacity: 0.85; }
 
 /* ── Header ─────────────────────────────────────────────────────────────────── */
 header {
-  border-bottom: 2px solid var(--accent);
-  padding-bottom: 10px;
-  margin-bottom: 18px;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 #widget-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--text);
 }
 
 /* ── Formulaire ─────────────────────────────────────────────────────────────── */
 #iteration-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .field > label {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
 }
 
@@ -137,7 +140,7 @@ input, select, textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
-  padding: 9px 12px;
+  padding: 10px 12px;
   font-size: 0.95rem;
   font-family: inherit;
   transition: border-color 0.2s;
@@ -149,52 +152,43 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
 }
 
-input.invalid, select.invalid {
-  border-color: var(--danger);
-}
-
-select option  { background: var(--surface-alt); }
+input.invalid, select.invalid { border-color: var(--danger) !important; }
+select option  { background: var(--bg); }
 textarea       { resize: vertical; min-height: 80px; }
 
 /* ── Erreurs de validation ──────────────────────────────────────────────────── */
 .error-msg {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--danger);
   display: none;
+  margin-top: 2px;
 }
 
 .error-msg.visible { display: block; }
 
 /* ── Date + Heure séparés ───────────────────────────────────────────────────── */
-.datetime-row {
-  display: flex;
-  gap: 8px;
-}
-
+.datetime-row { display: flex; gap: 8px; }
 .datetime-row input[type="date"] { flex: 2; }
 .datetime-row input[type="time"] { flex: 1; }
 
 /* ── Combobox WorkGroup ─────────────────────────────────────────────────────── */
-.combobox {
-  position: relative;
-}
+.combobox { position: relative; }
 
 .combobox-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 2px);
   left: 0;
   right: 0;
   background: var(--surface-alt);
-  border: 1px solid var(--accent);
-  border-top: none;
-  border-radius: 0 0 var(--radius) var(--radius);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
 }
 
 .combobox-option {
-  padding: 8px 12px;
+  padding: 10px 12px;
   cursor: pointer;
   font-size: 0.9rem;
   color: var(--text);
@@ -207,7 +201,7 @@ textarea       { resize: vertical; min-height: 80px; }
 }
 
 .combobox-empty {
-  padding: 8px 12px;
+  padding: 10px 12px;
   font-size: 0.85rem;
   color: var(--text-muted);
   font-style: italic;
@@ -218,17 +212,17 @@ textarea       { resize: vertical; min-height: 80px; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  max-height: 140px;
+  max-height: 150px;
   overflow-y: auto;
-  padding: 6px;
+  padding: 8px;
 }
 
 .multi-select label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 6px;
-  border-radius: 5px;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 400;
@@ -240,21 +234,18 @@ textarea       { resize: vertical; min-height: 80px; }
 .multi-select label:hover { background: var(--surface-alt); }
 
 .multi-select input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   accent-color: var(--accent);
   flex-shrink: 0;
+  border-radius: 3px;
 }
 
-.placeholder       { font-size: 0.85rem; color: var(--text-muted); padding: 4px 6px; display: block; }
+.placeholder       { font-size: 0.85rem; color: var(--text-muted); padding: 4px; display: block; }
 .placeholder.error { color: var(--danger); }
 
 /* ── Boutons d'action ───────────────────────────────────────────────────────── */
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
+.form-actions { display: flex; gap: 10px; margin-top: 8px; }
 
 button[type="submit"] {
   flex: 1;
@@ -262,7 +253,7 @@ button[type="submit"] {
   color: #111;
   border: none;
   border-radius: var(--radius);
-  padding: 10px;
+  padding: 12px;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
@@ -277,41 +268,44 @@ button[type="reset"] {
   color: var(--text-muted);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 18px;
+  padding: 12px 20px;
   font-size: 0.95rem;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
 
 button[type="reset"]:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--text-muted);
+  color: var(--text);
 }
 
 /* ── Feedback ───────────────────────────────────────────────────────────────── */
 #feedback {
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 0.9rem;
-  margin-top: 10px;
+  margin-top: 12px;
+  border-left-width: 4px;
+  border-left-style: solid;
 }
 
 #feedback.success {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid var(--success);
+  background: rgba(52, 211, 153, 0.1);
+  border-color: var(--success);
   color: var(--success);
 }
 
 #feedback.error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid var(--danger);
+  background: rgba(248, 113, 113, 0.1);
+  border-color: var(--danger);
   color: var(--danger);
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar       { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--surface-alt); }
 
 /* ── Badge version ──────────────────────────────────────────────────────────── */
 #version-badge {
@@ -319,5 +313,5 @@ button[type="reset"]:hover {
   bottom: 6px;
   right: 8px;
   font-size: 10px;
-  color: var(--border);
+  color: var(--surface-alt);
 }
