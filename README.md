@@ -1,4 +1,4 @@
-# WidgetIterationCreator
+# WidgetGRIST
 Widget pour GRIST
 
 
@@ -11,12 +11,21 @@ Widget pour GRIST
 5. *(optionnel)* Cliquer sur **Open configuration** pour personnaliser le titre et la couleur
 
 ## 🗂️ Structure du projet
-grist-widget-mon-widget/
+
+WidgetGRIST/
 ├── index.html
-├── widget.css
-├── widget.js
+├── lib/
+│   ├── grist-table.js
+│   ├── grist-select.js
+│   ├── grist-combobox.js
+│   └── grist-form.js
+├── widgets/
+│   ├── creationIteration/
+│   │   ├── index.html
+|   |   ├── widget.css
+│   │   └── widget.js
+│   └── # Futur widget se créer ici
 ├── README.md
 └── .github/
     └── workflows/
         └── deploy.yml
-
