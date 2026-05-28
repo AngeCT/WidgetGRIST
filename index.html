@@ -40,28 +40,38 @@
       </div>
 
       <div class="field">
-        <label for="workgroup">WorkGroup <span class="required">*</span></label>
-        <select id="workgroup">
-          <option value="">— Sélectionner un WorkGroup —</option>
-        </select>
+        <label>WorkGroup <span class="required">*</span></label>
+        <div class="combobox" id="workgroup-combo">
+          <input type="text" id="workgroup-search" placeholder="Rechercher un WorkGroup…" autocomplete="off" />
+          <div class="combobox-dropdown" id="workgroup-dropdown" hidden></div>
+        </div>
+        <input type="hidden" id="workgroup" />
         <span class="error-msg" id="err-workgroup">Veuillez sélectionner un WorkGroup.</span>
       </div>
 
       <div class="field">
         <label for="format">Format <span class="required">*</span></label>
-        <input type="text" id="format" placeholder="Ex : Sprint, Trimestre…" />
-        <span class="error-msg" id="err-format">Ce champ est obligatoire.</span>
+        <select id="format">
+          <option value="">— Sélectionner un format —</option>
+        </select>
+        <span class="error-msg" id="err-format">Veuillez sélectionner un format.</span>
       </div>
 
       <div class="field">
-        <label for="debut">Début <span class="required">*</span></label>
-        <input type="datetime-local" id="debut" />
+        <label>Début <span class="required">*</span></label>
+        <div class="datetime-row">
+          <input type="date" id="debut-date" />
+          <input type="time" id="debut-time" value="00:00" />
+        </div>
         <span class="error-msg" id="err-debut">Ce champ est obligatoire.</span>
       </div>
 
       <div class="field">
-        <label for="fin">Fin <span class="required">*</span></label>
-        <input type="datetime-local" id="fin" />
+        <label>Fin <span class="required">*</span></label>
+        <div class="datetime-row">
+          <input type="date" id="fin-date" />
+          <input type="time" id="fin-time" value="00:00" />
+        </div>
         <span class="error-msg" id="err-fin">Ce champ est obligatoire.</span>
       </div>
 

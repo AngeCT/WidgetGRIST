@@ -37,7 +37,6 @@ body {
 }
 
 /* ── Config panel ───────────────────────────────────────────────────────────── */
-/* ── Config panel ───────────────────────────────────────────────────────────── */
 #config-panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -46,11 +45,11 @@ body {
   margin-bottom: 16px;
   flex-direction: column;
   gap: 6px;
-  display: none; /* caché par défaut */
+  display: none;
 }
 
 #config-panel.open {
-  display: flex; /* affiché uniquement via la classe .open */
+  display: flex;
 }
 
 #config-panel h3 {
@@ -165,6 +164,54 @@ textarea       { resize: vertical; min-height: 80px; }
 }
 
 .error-msg.visible { display: block; }
+
+/* ── Date + Heure séparés ───────────────────────────────────────────────────── */
+.datetime-row {
+  display: flex;
+  gap: 8px;
+}
+
+.datetime-row input[type="date"] { flex: 2; }
+.datetime-row input[type="time"] { flex: 1; }
+
+/* ── Combobox WorkGroup ─────────────────────────────────────────────────────── */
+.combobox {
+  position: relative;
+}
+
+.combobox-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface-alt);
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.combobox-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.combobox-option:hover,
+.combobox-option.active {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.combobox-empty {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
 
 /* ── Multi-select Softwares ─────────────────────────────────────────────────── */
 .multi-select {
