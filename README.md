@@ -1,14 +1,12 @@
 # WidgetGRIST
-Widget pour GRIST
-
+Bibliothèque de widget qui servent à rendre GRIST plus simple et visuel
 
 ## 🔧 Utilisation dans Grist
 
 1. Dans une page Grist, ajouter une section **Widget personnalisé**
-2. Coller l'URL GitHub Pages du widget : https://angect.github.io/WidgetIterationCreator/
+2. Coller l'URL du widget
 3. Sélectionner la table source dans le panneau latéral
-4. Choisir le niveau d'accès : **Lire la table**
-5. *(optionnel)* Cliquer sur **Open configuration** pour personnaliser le titre et la couleur
+4. Choisir le niveau d'accès
 
 ## 🗂️ Structure du projet
 
