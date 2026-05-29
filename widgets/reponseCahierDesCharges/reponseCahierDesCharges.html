@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Réponse Cahier des Charges</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <link rel="stylesheet" href="reponseCahierDesCharges.css" />
+</head>
+<body>
+
+  <div id="loading">⏳ Chargement…</div>
+
+  <div id="config-panel">
+    <h3>⚙️ Configuration</h3>
+    <label for="cfg-color">Couleur d'accentuation</label>
+    <input type="color" id="cfg-color" value="#3ddc84" />
+    <label for="cfg-table-cdc">Table CahierDesCharges</label>
+    <input type="text" id="cfg-table-cdc" placeholder="CahierDesCharges" />
+    <label for="cfg-table-exigence-cdc">Table Exigence_CahierDesCharges</label>
+    <input type="text" id="cfg-table-exigence-cdc" placeholder="Exigence_CahierDesCharges" />
+    <label for="cfg-table-reponse">Table Reponse</label>
+    <input type="text" id="cfg-table-reponse" placeholder="Reponse" />
+    <label for="cfg-table-organisation">Table Organisation</label>
+    <input type="text" id="cfg-table-organisation" placeholder="Organisation" />
+    <label for="cfg-table-software">Table Software</label>
+    <input type="text" id="cfg-table-software" placeholder="Software" />
+    <button id="cfg-save">💾 Enregistrer</button>
+  </div>
+
+  <div id="widget-container" hidden>
+    <header>
+      <h2 id="widget-title"></h2>
+    </header>
+
+    <!-- Sélection du CDC -->
+    <div class="cdc-section">
+      <div class="field">
+        <label>Cahier des Charges <span class="required">*</span></label>
+        <div class="combobox">
+          <input type="text" id="cdc-search" placeholder="Rechercher un cahier des charges…" autocomplete="off" />
+          <div class="combobox-dropdown" id="cdc-dropdown" hidden></div>
+        </div>
+        <input type="hidden" id="cdc-id" />
+        <span class="error-msg" id="err-cdc">Veuillez sélectionner un cahier des charges.</span>
+      </div>
+    </div>
+
+    <!-- Exigences (section dynamique) -->
+    <div id="exigences-section" hidden>
+      <div class="exigences-header">
+        <h3 id="exigences-title"></h3>
+        <span id="exigences-count" class="count-badge"></span>
+      </div>
+      <div id="exigences-list"></div>
+      <div class="form-actions">
+        <button type="button" id="reset-btn">🔄 Réinitialiser</button>
+        <button type="button" id="submit-btn">💾 Enregistrer les réponses</button>
+      </div>
+    </div>
+
+    <div id="feedback" hidden></div>
+  </div>
+
+  <span id="version-badge"></span>
+
+  <script src="reponseCahierDesCharges.js" type="module"></script>
+</body>
+</html>
