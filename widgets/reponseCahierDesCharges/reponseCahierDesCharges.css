@@ -12,7 +12,6 @@
   --border:      #374151;
   --danger:      #F87171;
   --success:     #34D399;
-  --warning:     #FBBF24;
   --info:        #60A5FA;
   --radius:      4px;
 }
@@ -30,16 +29,11 @@ body {
 /* ── Loading ────────────────────────────────────────────────────────────────── */
 #loading { color: var(--text-muted); text-align: center; padding: 24px 0; }
 
-/* ── Config Panel ───────────────────────────────────────────────────────────── */
+/* ── Config panel ───────────────────────────────────────────────────────────── */
 #config-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 16px;
-  display: none;
-  flex-direction: column;
-  gap: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+  display: none; flex-direction: column; gap: 8px;
 }
 #config-panel.open { display: flex; }
 #config-panel h3 {
@@ -67,15 +61,20 @@ header {
   padding-bottom: 12px; margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
-#widget-title { font-size: 1.25rem; font-weight: 600; color: var(--text); }
+#widget-title { font-size: 1.25rem; font-weight: 600; }
 
-/* ── Section CDC ────────────────────────────────────────────────────────────── */
-.cdc-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
+/* ── Panneau sélection ───────────────────────────────────────────────────────── */
+.selection-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
   margin-bottom: 20px;
+}
+
+.selection-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
 /* ── Champ générique ────────────────────────────────────────────────────────── */
@@ -86,22 +85,36 @@ header {
 }
 .required { color: var(--accent); margin-left: 2px; }
 
-input[type="text"], select, textarea {
+input[type="text"],
+input[type="number"],
+select,
+textarea {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); color: var(--text);
   padding: 10px 12px; font-size: 0.95rem; font-family: inherit;
   transition: border-color 0.2s; width: 100%;
 }
-input[type="text"]:focus, select:focus, textarea:focus {
-  outline: none; border-color: var(--accent);
-}
-input.invalid, select.invalid { border-color: var(--danger) !important; }
-select option { background: var(--bg); }
-textarea { resize: vertical; min-height: 72px; }
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus  { outline: none; border-color: var(--accent); }
+input.invalid,
+select.invalid  { border-color: var(--danger) !important; }
+textarea        { resize: vertical; min-height: 72px; }
 
 /* ── Erreurs ────────────────────────────────────────────────────────────────── */
-.error-msg { font-size: 0.8rem; color: var(--danger); display: none; margin-top: 2px; }
-.error-msg.visible { display: block; }
+.error-msg              { font-size: 0.8rem; color: var(--danger); display: none; margin-top: 2px; }
+.error-msg.visible      { display: block; }
+
+/* ── Bouton charger ──────────────────────────────────────────────────────────── */
+#load-btn {
+  background: var(--surface-alt); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 11px 20px; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  align-self: flex-start;
+}
+#load-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ── Combobox ───────────────────────────────────────────────────────────────── */
 .combobox { position: relative; }
@@ -115,19 +128,19 @@ textarea { resize: vertical; min-height: 72px; }
 .combobox-option.active { background: var(--surface); color: var(--accent); }
 .combobox-empty { padding: 10px 12px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
 
-/* ── En-tête exigences ──────────────────────────────────────────────────────── */
+/* ── En-tête exigences ───────────────────────────────────────────────────────── */
 .exigences-header {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 16px; padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
-.exigences-header h3 { font-size: 1rem; font-weight: 600; color: var(--text); }
+.exigences-header h3 { font-size: 1rem; font-weight: 600; }
 .count-badge {
   background: var(--surface-alt); color: var(--text-muted);
   font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 12px;
 }
 
-/* ── Carte exigence ─────────────────────────────────────────────────────────── */
+/* ── Carte exigence ──────────────────────────────────────────────────────────── */
 #exigences-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
 
 .exigence-card {
@@ -148,22 +161,17 @@ textarea { resize: vertical; min-height: 72px; }
 }
 .card-title { font-size: 0.9rem; font-weight: 600; color: var(--text); flex: 1; }
 
-.badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
-.badge-existing { background: rgba(96, 165, 250, 0.15); color: var(--info); }
-.badge-new      { background: rgba(251, 191, 36,  0.15); color: var(--warning); }
+.card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 
-.card-body {
-  padding: 16px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.field-full { grid-column: 1 / -1; }
+/* ── Note /100 ───────────────────────────────────────────────────────────────── */
+.note-wrapper { display: flex; align-items: center; gap: 10px; }
+.note-wrapper input[type="number"] { max-width: 120px; text-align: center; }
+.note-unit { font-size: 1rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 
-/* ── Note – couleurs des options ────────────────────────────────────────────── */
-.note-select option[value="Conforme"]               { color: var(--success); }
-.note-select option[value="Partiellement conforme"] { color: var(--warning); }
-.note-select option[value="Non conforme"]           { color: var(--danger);  }
+/* ─ masque les flèches du number input ───────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
 
 /* ── Actions ────────────────────────────────────────────────────────────────── */
 .form-actions { display: flex; gap: 10px; margin-top: 8px; }
@@ -202,7 +210,6 @@ textarea { resize: vertical; min-height: 72px; }
 #version-badge { position: fixed; bottom: 6px; right: 8px; font-size: 10px; color: var(--surface-alt); }
 
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
-@media (max-width: 500px) {
-  .card-body { grid-template-columns: 1fr; }
-  .field-full { grid-column: 1; }
+@media (max-width: 600px) {
+  .selection-row { grid-template-columns: 1fr; }
 }

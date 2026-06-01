@@ -17,10 +17,12 @@
     <input type="color" id="cfg-color" value="#3ddc84" />
     <label for="cfg-table-cdc">Table CahierDesCharges</label>
     <input type="text" id="cfg-table-cdc" placeholder="CahierDesCharges" />
-    <label for="cfg-table-exigence-cdc">Table Exigence_CahierDesCharges</label>
-    <input type="text" id="cfg-table-exigence-cdc" placeholder="Exigence_CahierDesCharges" />
+    <label for="cfg-table-exigence-cdc">Table ExigenceCDC</label>
+    <input type="text" id="cfg-table-exigence-cdc" placeholder="ExigenceCDC" />
     <label for="cfg-table-reponse">Table Reponse</label>
     <input type="text" id="cfg-table-reponse" placeholder="Reponse" />
+    <label for="cfg-table-reponse-exigence">Table ReponseExigenceCDC</label>
+    <input type="text" id="cfg-table-reponse-exigence" placeholder="ReponseExigenceCDC" />
     <label for="cfg-table-organisation">Table Organisation</label>
     <input type="text" id="cfg-table-organisation" placeholder="Organisation" />
     <label for="cfg-table-software">Table Software</label>
@@ -33,20 +35,45 @@
       <h2 id="widget-title"></h2>
     </header>
 
-    <!-- Sélection du CDC -->
-    <div class="cdc-section">
-      <div class="field">
-        <label>Cahier des Charges <span class="required">*</span></label>
-        <div class="combobox">
-          <input type="text" id="cdc-search" placeholder="Rechercher un cahier des charges…" autocomplete="off" />
-          <div class="combobox-dropdown" id="cdc-dropdown" hidden></div>
+    <!-- ── Panneau de sélection ─────────────────────────────────────────────── -->
+    <div class="selection-panel">
+      <div class="selection-row">
+
+        <div class="field">
+          <label>Cahier des Charges <span class="required">*</span></label>
+          <div class="combobox">
+            <input type="text" id="cdc-search" placeholder="Rechercher un CDC…" autocomplete="off" />
+            <div class="combobox-dropdown" id="cdc-dropdown" hidden></div>
+          </div>
+          <input type="hidden" id="cdc-id" />
+          <span class="error-msg" id="err-cdc">Veuillez sélectionner un cahier des charges.</span>
         </div>
-        <input type="hidden" id="cdc-id" />
-        <span class="error-msg" id="err-cdc">Veuillez sélectionner un cahier des charges.</span>
+
+        <div class="field">
+          <label>Organisation <span class="required">*</span></label>
+          <div class="combobox">
+            <input type="text" id="org-search" placeholder="Rechercher une organisation…" autocomplete="off" />
+            <div class="combobox-dropdown" id="org-dropdown" hidden></div>
+          </div>
+          <input type="hidden" id="org-id" />
+          <span class="error-msg" id="err-org">Veuillez sélectionner une organisation.</span>
+        </div>
+
+        <div class="field">
+          <label>Software <span class="required">*</span></label>
+          <div class="combobox">
+            <input type="text" id="sw-search" placeholder="Rechercher un software…" autocomplete="off" />
+            <div class="combobox-dropdown" id="sw-dropdown" hidden></div>
+          </div>
+          <input type="hidden" id="sw-id" />
+          <span class="error-msg" id="err-sw">Veuillez sélectionner un software.</span>
+        </div>
+
       </div>
+      <button type="button" id="load-btn">🔍 Charger les exigences</button>
     </div>
 
-    <!-- Exigences (section dynamique) -->
+    <!-- ── Formulaire dynamique ──────────────────────────────────────────────── -->
     <div id="exigences-section" hidden>
       <div class="exigences-header">
         <h3 id="exigences-title"></h3>
@@ -55,7 +82,7 @@
       <div id="exigences-list"></div>
       <div class="form-actions">
         <button type="button" id="reset-btn">🔄 Réinitialiser</button>
-        <button type="button" id="submit-btn">💾 Enregistrer les réponses</button>
+        <button type="button" id="submit-btn">💾 Soumettre les réponses</button>
       </div>
     </div>
 
@@ -63,7 +90,6 @@
   </div>
 
   <span id="version-badge"></span>
-
   <script src="reponseCahierDesCharges.js" type="module"></script>
 </body>
 </html>
