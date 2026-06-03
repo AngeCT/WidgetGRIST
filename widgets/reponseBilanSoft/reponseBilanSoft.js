@@ -1,10 +1,15 @@
-// reponseBilanSoft.js — v4.0.0
-import { fetchTableRows }                from '../../lib/table.js';
-import { initCombobox }                  from '../../lib/comboBox.js';
-import { showFeedback, setLoadingState } from '../../lib/form.js';
+// reponseBilanSoft.js — v5.0.0
+import { fetchTableRows }                                                             from '../../lib/table.js';
+import { initCombobox }                                                               from '../../lib/comboBox.js';
+import { showFeedback, setLoadingState, validateForm }                                from '../../lib/form.js';
+import { escapeHtml }                                                                 from '../../lib/html.js';
+import { nextMajorVersion, populateVersionSelect }                                    from '../../lib/version.js';
+import { addRecord, updateRecord, applyActions }                                      from '../../lib/gristActions.js';
+import { renderRadioGroupHTML, getRadioValue, validateRadioGroups, resetRadioGroup }  from '../../lib/radioGroup.js';
+import { indexBy }                                                                    from '../../lib/utils.js';
 
 // ─── Version ─────────────────────────────────────────────────────────────────
-const VERSION = '4.0.0';
+const VERSION = '5.0.0';
 document.getElementById('version-badge').textContent = `v${VERSION}`;
 
 // ─── Options par défaut ──────────────────────────────────────────────────────
@@ -82,8 +87,14 @@ let allReponseBilanSoft = [];
 
 let currentTripletBilans = [];
 let currentBilanSoftId   = null;
-let existingReponsesMap  = new Map();
-let currentExigences     = [];
+let existingReponsesMap  = new Map(); // exigenceId → { id, Etat, Commentaire }
+let currentExigences     = [];        // { exigenceCDCId, exigenceId, nom }[]
+
+const ETATS = [
+  { value: 'Fait',    label: '✅ Fait'    },
+  { value: 'PasFait', label: '❌ Pas fait' },
+  { value: 'Partiel', label: '⚠️ Partiel' },
+];
 
 // ─── Chargement de toutes les tables ────────────────────────────────────────
 async function loadAllData() {
@@ -113,132 +124,101 @@ async function loadAllData() {
 }
 
 // ─── Comboboxes ──────────────────────────────────────────────────────────────
-initCombobox({
-  searchInput: el.cdcSearch, hiddenInput: el.cdcId,
-  dropdown: el.cdcDropdown,  errorEl: el.errCdc,
-  getItems: () => allCDC,    filterMode: 'includes',
-});
-initCombobox({
-  searchInput: el.orgSearch, hiddenInput: el.orgId,
-  dropdown: el.orgDropdown,  errorEl: el.errOrg,
-  getItems: () => allOrganisations, filterMode: 'includes',
-});
-initCombobox({
-  searchInput: el.swSearch,  hiddenInput: el.swId,
-  dropdown: el.swDropdown,   errorEl: el.errSw,
-  getItems: () => allSoftwares, filterMode: 'includes',
-});
+initCombobox({ searchInput: el.cdcSearch, hiddenInput: el.cdcId, dropdown: el.cdcDropdown, errorEl: el.errCdc, getItems: () => allCDC,           filterMode: 'includes' });
+initCombobox({ searchInput: el.orgSearch, hiddenInput: el.orgId, dropdown: el.orgDropdown, errorEl: el.errOrg, getItems: () => allOrganisations, filterMode: 'includes' });
+initCombobox({ searchInput: el.swSearch,  hiddenInput: el.swId,  dropdown: el.swDropdown,  errorEl: el.errSw,  getItems: () => allSoftwares,      filterMode: 'includes' });
 
 // ─── Validation sélection ────────────────────────────────────────────────────
 function validateSelection() {
-  let valid = true;
-  [
-    { inputEl: el.cdcId, searchEl: el.cdcSearch, errEl: el.errCdc },
-    { inputEl: el.orgId, searchEl: el.orgSearch, errEl: el.errOrg },
-    { inputEl: el.swId,  searchEl: el.swSearch,  errEl: el.errSw  },
-  ].forEach(({ inputEl, searchEl, errEl }) => {
-    const empty = !inputEl.value;
-    searchEl.classList.toggle('invalid', empty);
-    errEl.classList.toggle('visible',    empty);
-    if (empty) valid = false;
-  });
-  return valid;
+  return validateForm([
+    { fieldId: 'cdc-id', errId: 'err-cdc', visualId: 'cdc-search' },
+    { fieldId: 'org-id', errId: 'err-org', visualId: 'org-search' },
+    { fieldId: 'sw-id',  errId: 'err-sw',  visualId: 'sw-search'  },
+  ]);
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function escapeHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function nextVersion(bilans) {
-  if (!bilans.length) return '1.0.0';
-  const maxMajor = Math.max(
-    ...bilans.map(b => {
-      const m = String(b.Version ?? '0').match(/^(\d+)/);
-      return m ? parseInt(m[1], 10) : 0;
-    })
-  );
-  return `${maxMajor + 1}.0.0`;
-}
-
-function populateVersionSelect(bilans, selectedId) {
-  el.bilanVersionSelect.innerHTML = '';
-  bilans.forEach(b => {
-    const opt       = document.createElement('option');
-    opt.value       = b.id;
-    opt.textContent = b.Version ?? `#${b.id}`;
-    el.bilanVersionSelect.appendChild(opt);
-  });
-  el.bilanVersionSelect.value = String(selectedId);
-}
-
-function buildExistingReponsesMap() {
-  existingReponsesMap = new Map(
-    allReponseBilanSoft
-      .filter(r => Number(r.BilanSoft) === currentBilanSoftId)
-      .map(r => [
-        Number(r.Exigence),
-        { id: r.id, Etat: r.Etat ?? '', Commentaire: r.Commentaire ?? '' },
-      ])
-  );
-}
+// ─── Helpers locaux ───────────────────────────────────────────────────────────
 
 function isCurrentBilanLocked() {
-  const bilan = currentTripletBilans.find(b => b.id === currentBilanSoftId);
-  return !!(bilan?.IsValid);
+  return !!(currentTripletBilans.find(b => b.id === currentBilanSoftId)?.IsValid);
 }
 
-/**
- * Met à jour le bandeau :
- * - badge IsValid
- * - bouton toggle Valider / Dévalider (toujours visible)
- * - bannière lecture seule
- * - boutons d'action du formulaire
- * - bouton Nouvelle version (jamais bloqué par IsValid)
- */
+/** Reconstruit le cache des réponses existantes pour le BilanSoft courant. */
+function refreshReponsesMap() {
+  existingReponsesMap = indexBy(
+    allReponseBilanSoft.filter(r => Number(r.BilanSoft) === currentBilanSoftId),
+    r => Number(r.Exigence),
+    r => ({ id: r.id, Etat: r.Etat ?? '', Commentaire: r.Commentaire ?? '' })
+  );
+}
+
+/** Met à jour le bandeau BilanSoft (badge, bouton toggle, bannière, actions). */
 function updateIsValidDisplay(bilan) {
   const isValid = !!(bilan?.IsValid);
 
-  // Badge texte
   el.bilanIsValid.textContent = isValid ? '✅ Validé' : '❌ Non validé';
   el.bilanIsValid.className   = `bilan-info-value ${isValid ? 'valid' : 'not-valid'}`;
 
-  // Bouton toggle : libellé + style changent, mais toujours visible
-  if (isValid) {
-    el.validateBtn.textContent = '🔓 Dévalider cette version';
-    el.validateBtn.classList.add('btn-devalidate');
-  } else {
-    el.validateBtn.textContent = '🔒 Valider cette version';
-    el.validateBtn.classList.remove('btn-devalidate');
-  }
+  el.validateBtn.textContent = isValid ? '🔓 Dévalider cette version' : '🔒 Valider cette version';
+  el.validateBtn.classList.toggle('btn-devalidate', isValid);
 
-  // Bannière lecture seule
-  el.lockedBanner.hidden = !isValid;
-
-  // Boutons enregistrer/réinitialiser : masqués si verrouillé
-  el.formActions.hidden = isValid;
-
-  // ✅ Nouvelle version : toujours disponible, indépendant de IsValid
+  el.lockedBanner.hidden  = !isValid;
+  el.formActions.hidden   = isValid;
   el.newVersionBtn.disabled = false;
 }
 
+/** Met à jour le badge de progression (X/Y répondues). */
 function updateCountBadge() {
   const total    = currentExigences.length;
   const answered = existingReponsesMap.size;
-  el.exigencesCount.textContent =
-    answered > 0
-      ? `${answered}/${total} répondue${answered > 1 ? 's' : ''}`
-      : `${total} exigence${total > 1 ? 's' : ''}`;
+  el.exigencesCount.textContent = answered > 0
+    ? `${answered}/${total} répondue${answered > 1 ? 's' : ''}`
+    : `${total} exigence${total > 1 ? 's' : ''}`;
 }
 
-// ─── Affichage des exigences ──────────────────────────────────────────────────
+// ─── Rendu des exigences ─────────────────────────────────────────────────────
+function renderExigences(exigences, isLocked = false) {
+  el.exigencesList.innerHTML = '';
+
+  exigences.forEach((exigence, index) => {
+    const { exigenceId, nom } = exigence;
+    const existing = existingReponsesMap.get(exigenceId);
+
+    const card = document.createElement('div');
+    card.className = ['exigence-card', existing ? 'pre-filled' : '', isLocked ? 'locked' : '']
+      .filter(Boolean).join(' ');
+    card.dataset.exigenceId = exigenceId;
+
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-index">#${index + 1}</span>
+        <span class="card-title">${escapeHtml(nom)}</span>
+        ${existing ? '<span class="card-answered-badge">✓ Répondu</span>' : ''}
+        ${isLocked ? '<span class="card-locked-badge">🔒</span>'          : ''}
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>État${isLocked ? '' : ' <span class="required">*</span>'}</label>
+          <div class="radio-group" id="etat-group-${exigenceId}">
+            ${renderRadioGroupHTML(`etat-${exigenceId}`, ETATS, existing?.Etat ?? '', isLocked)}
+          </div>
+          <span class="error-msg" id="err-etat-${exigenceId}">Veuillez sélectionner un état.</span>
+        </div>
+        <div class="field">
+          <label for="commentaire-${exigenceId}">Commentaire</label>
+          <textarea id="commentaire-${exigenceId}"
+                    placeholder="${isLocked ? '—' : 'Justification, détails…'}"
+                    ${isLocked ? 'readonly' : ''}>${escapeHtml(existing?.Commentaire ?? '')}</textarea>
+        </div>
+      </div>`;
+
+    el.exigencesList.appendChild(card);
+  });
+}
+
+/** Charge et affiche toutes les exigences du CDC pour le BilanSoft courant. */
 function loadExigencesForCurrentBilan() {
-  const cdcId = parseInt(el.cdcId.value, 10);
+  const cdcId             = parseInt(el.cdcId.value, 10);
   const exigencesCDCDuCDC = allExigencesCDC.filter(r => Number(r.CDC) === cdcId);
 
   if (!exigencesCDCDuCDC.length) {
@@ -247,21 +227,17 @@ function loadExigencesForCurrentBilan() {
     return;
   }
 
-  buildExistingReponsesMap();
+  refreshReponsesMap();
 
-  const exigenceMap = new Map(allExigences.map(e => [e.id, e]));
-  currentExigences = exigencesCDCDuCDC.map(ec => ({
+  const exigenceMap = indexBy(allExigences, e => e.id);
+  currentExigences  = exigencesCDCDuCDC.map(ec => ({
     exigenceCDCId: ec.id,
     exigenceId:    Number(ec.Exigence),
-    nom:           ec.FullName
-                   || exigenceMap.get(Number(ec.Exigence))?.Nom
-                   || `Exigence #${ec.Exigence}`,
+    nom:           ec.FullName || exigenceMap.get(Number(ec.Exigence))?.Nom || `Exigence #${ec.Exigence}`,
   }));
 
-  const cdc = allCDC.find(c => c.id === cdcId);
-  el.exigencesTitle.textContent = cdc?.name ?? 'Exigences';
+  el.exigencesTitle.textContent = allCDC.find(c => c.id === cdcId)?.name ?? 'Exigences';
   updateCountBadge();
-
   renderExigences(currentExigences, isCurrentBilanLocked());
   el.exigencesSection.hidden = false;
   el.feedback.hidden         = true;
@@ -272,38 +248,23 @@ el.loadBtn.addEventListener('click', async () => {
   if (!validateSelection()) return;
 
   el.loadBtn.disabled = true;
-
   const cdcId = parseInt(el.cdcId.value, 10);
   const orgId = parseInt(el.orgId.value, 10);
   const swId  = parseInt(el.swId.value,  10);
 
   currentTripletBilans = allBilanSoft.filter(r =>
-    Number(r.CDC)          === cdcId &&
-    Number(r.Organisation) === orgId &&
-    Number(r.Software)     === swId
+    Number(r.CDC) === cdcId && Number(r.Organisation) === orgId && Number(r.Software) === swId
   );
 
   // Aucun BilanSoft → création automatique v1.0.0
   if (!currentTripletBilans.length) {
     try {
-      const result = await grist.docApi.applyUserActions([
-        ['AddRecord', options.tableBilanSoft, null, {
-          CDC:          cdcId,
-          Organisation: orgId,
-          Software:     swId,
-          Version:      '1.0.0',
-        }],
-      ]);
-      const newId    = result.retValues[0];
-      const newBilan = {
-        id: newId, CDC: cdcId, Organisation: orgId,
-        Software: swId, Version: '1.0.0', IsValid: false,
-      };
+      const newId    = await addRecord(options.tableBilanSoft, { CDC: cdcId, Organisation: orgId, Software: swId, Version: '1.0.0' });
+      const newBilan = { id: newId, CDC: cdcId, Organisation: orgId, Software: swId, Version: '1.0.0', IsValid: false };
       allBilanSoft.push(newBilan);
       currentTripletBilans = [newBilan];
       showFeedback(el.feedback, '✅ Nouveau BilanSoft créé automatiquement (v1.0.0).', 'success');
     } catch (err) {
-      console.error('[reponseBilanSoft] Erreur création BilanSoft :', err);
       showFeedback(el.feedback, `❌ Erreur création BilanSoft : ${err.message}`, 'error');
       el.loadBtn.disabled = false;
       return;
@@ -313,55 +274,38 @@ el.loadBtn.addEventListener('click', async () => {
   const defaultBilan = currentTripletBilans[currentTripletBilans.length - 1];
   currentBilanSoftId = defaultBilan.id;
 
-  populateVersionSelect(currentTripletBilans, currentBilanSoftId);
+  populateVersionSelect(el.bilanVersionSelect, currentTripletBilans, currentBilanSoftId);
   updateIsValidDisplay(defaultBilan);
   el.bilanInfo.hidden = false;
-
   loadExigencesForCurrentBilan();
   el.loadBtn.disabled = false;
 });
 
 // ─── Changement de version ────────────────────────────────────────────────────
 el.bilanVersionSelect.addEventListener('change', () => {
-  const selectedId   = parseInt(el.bilanVersionSelect.value, 10);
-  currentBilanSoftId = selectedId;
-  const bilan = currentTripletBilans.find(b => b.id === selectedId);
-  updateIsValidDisplay(bilan);
+  currentBilanSoftId = parseInt(el.bilanVersionSelect.value, 10);
+  updateIsValidDisplay(currentTripletBilans.find(b => b.id === currentBilanSoftId));
   loadExigencesForCurrentBilan();
 });
 
-// ─── Nouvelle version (toujours disponible) ───────────────────────────────────
+// ─── Nouvelle version ────────────────────────────────────────────────────────
 el.newVersionBtn.addEventListener('click', async () => {
-  const cdcId   = parseInt(el.cdcId.value, 10);
-  const orgId   = parseInt(el.orgId.value, 10);
-  const swId    = parseInt(el.swId.value,  10);
-  const version = nextVersion(currentTripletBilans);
-
+  const version = nextMajorVersion(currentTripletBilans);
   el.newVersionBtn.disabled = true;
   try {
-    const result = await grist.docApi.applyUserActions([
-      ['AddRecord', options.tableBilanSoft, null, {
-        CDC:          cdcId,
-        Organisation: orgId,
-        Software:     swId,
-        Version:      version,
-      }],
-    ]);
-    const newId    = result.retValues[0];
-    const newBilan = {
-      id: newId, CDC: cdcId, Organisation: orgId,
-      Software: swId, Version: version, IsValid: false,
-    };
+    const cdcId    = parseInt(el.cdcId.value, 10);
+    const orgId    = parseInt(el.orgId.value, 10);
+    const swId     = parseInt(el.swId.value,  10);
+    const newId    = await addRecord(options.tableBilanSoft, { CDC: cdcId, Organisation: orgId, Software: swId, Version: version });
+    const newBilan = { id: newId, CDC: cdcId, Organisation: orgId, Software: swId, Version: version, IsValid: false };
     allBilanSoft.push(newBilan);
     currentTripletBilans.push(newBilan);
     currentBilanSoftId = newId;
-
-    populateVersionSelect(currentTripletBilans, currentBilanSoftId);
+    populateVersionSelect(el.bilanVersionSelect, currentTripletBilans, currentBilanSoftId);
     updateIsValidDisplay(newBilan);
     loadExigencesForCurrentBilan();
     showFeedback(el.feedback, `✅ Nouvelle version ${version} créée.`, 'success');
   } catch (err) {
-    console.error('[reponseBilanSoft] Erreur nouvelle version :', err);
     showFeedback(el.feedback, `❌ Erreur : ${err.message}`, 'error');
   } finally {
     el.newVersionBtn.disabled = false;
@@ -370,10 +314,8 @@ el.newVersionBtn.addEventListener('click', async () => {
 
 // ─── Toggle Valider / Dévalider ───────────────────────────────────────────────
 el.validateBtn.addEventListener('click', async () => {
-  const currentlyValid = isCurrentBilanLocked();
-  const nextValue      = !currentlyValid;
-
-  const message = nextValue
+  const nextValue = !isCurrentBilanLocked();
+  const message   = nextValue
     ? '⚠️ Confirmer la validation ?\n\nCette version passera en lecture seule.\n\nContinuer ?'
     : '⚠️ Confirmer la dévalidation ?\n\nCette version redeviendra modifiable.\n\nContinuer ?';
 
@@ -381,119 +323,36 @@ el.validateBtn.addEventListener('click', async () => {
 
   el.validateBtn.disabled = true;
   try {
-    await grist.docApi.applyUserActions([
-      ['UpdateRecord', options.tableBilanSoft, currentBilanSoftId, { IsValid: nextValue }],
-    ]);
+    await updateRecord(options.tableBilanSoft, currentBilanSoftId, { IsValid: nextValue });
 
-    // Mise à jour du cache local
+    // Mise à jour des deux caches (triplet + global)
+    [currentTripletBilans, allBilanSoft].forEach(list => {
+      const b = list.find(b => b.id === currentBilanSoftId);
+      if (b) b.IsValid = nextValue;
+    });
+
     const bilan = currentTripletBilans.find(b => b.id === currentBilanSoftId);
-    if (bilan) bilan.IsValid = nextValue;
-    const bilanGlobal = allBilanSoft.find(b => b.id === currentBilanSoftId);
-    if (bilanGlobal) bilanGlobal.IsValid = nextValue;
-
     updateIsValidDisplay(bilan);
     renderExigences(currentExigences, nextValue);
-
     showFeedback(
       el.feedback,
-      nextValue
-        ? '🔒 Version validée — formulaire en lecture seule.'
-        : '🔓 Version dévalidée — formulaire à nouveau modifiable.',
+      nextValue ? '🔒 Version validée — formulaire en lecture seule.' : '🔓 Version dévalidée — formulaire à nouveau modifiable.',
       'success'
     );
   } catch (err) {
-    console.error('[reponseBilanSoft] Erreur toggle validation :', err);
     showFeedback(el.feedback, `❌ Opération refusée : ${err.message ?? 'permissions insuffisantes.'}`, 'error');
   } finally {
     el.validateBtn.disabled = false;
   }
 });
 
-// ─── Rendu des cartes exigences ───────────────────────────────────────────────
-const ETATS = [
-  { value: 'Fait',    label: '✅ Fait'    },
-  { value: 'PasFait', label: '❌ Pas fait' },
-  { value: 'Partiel', label: '⚠️ Partiel' },
-];
-
-function renderExigences(exigences, isLocked = false) {
-  el.exigencesList.innerHTML = '';
-
-  exigences.forEach((exigence, index) => {
-    const { exigenceId, nom } = exigence;
-    const existing = existingReponsesMap.get(exigenceId);
-
-    const card = document.createElement('div');
-    card.className = [
-      'exigence-card',
-      existing ? 'pre-filled' : '',
-      isLocked ? 'locked'     : '',
-    ].filter(Boolean).join(' ');
-    card.dataset.exigenceId = exigenceId;
-
-    const radiosHTML = ETATS.map(({ value, label }) => `
-      <label class="radio-option">
-        <input type="radio" name="etat-${exigenceId}" value="${value}"
-               ${existing?.Etat === value ? 'checked' : ''}
-               ${isLocked ? 'disabled' : ''} />
-        <span class="radio-label">${label}</span>
-      </label>
-    `).join('');
-
-    card.innerHTML = `
-      <div class="card-header">
-        <span class="card-index">#${index + 1}</span>
-        <span class="card-title">${escapeHtml(nom)}</span>
-        ${existing  ? '<span class="card-answered-badge">✓ Répondu</span>' : ''}
-        ${isLocked  ? '<span class="card-locked-badge">🔒</span>'          : ''}
-      </div>
-      <div class="card-body">
-        <div class="field">
-          <label>État${isLocked ? '' : ' <span class="required">*</span>'}</label>
-          <div class="radio-group" id="etat-group-${exigenceId}">
-            ${radiosHTML}
-          </div>
-          <span class="error-msg" id="err-etat-${exigenceId}">Veuillez sélectionner un état.</span>
-        </div>
-        <div class="field">
-          <label for="commentaire-${exigenceId}">Commentaire</label>
-          <textarea id="commentaire-${exigenceId}"
-                    placeholder="${isLocked ? '—' : 'Justification, détails…'}"
-                    ${isLocked ? 'readonly' : ''}>${escapeHtml(existing?.Commentaire ?? '')}</textarea>
-        </div>
-      </div>
-    `;
-
-    el.exigencesList.appendChild(card);
-  });
-}
-
-// ─── Validation des états ────────────────────────────────────────────────────
-function validateEtats() {
-  if (isCurrentBilanLocked()) return true;
-  let valid = true;
-  currentExigences.forEach(({ exigenceId }) => {
-    const selected  = document.querySelector(`input[name="etat-${exigenceId}"]:checked`);
-    const errEl     = document.getElementById(`err-etat-${exigenceId}`);
-    const group     = document.getElementById(`etat-group-${exigenceId}`);
-    const isInvalid = !selected;
-    group.classList.toggle('invalid', isInvalid);
-    errEl.classList.toggle('visible', isInvalid);
-    if (isInvalid) valid = false;
-  });
-  return valid;
-}
-
 // ─── Réinitialisation ────────────────────────────────────────────────────────
 el.resetBtn.addEventListener('click', () => {
   if (isCurrentBilanLocked()) return;
   currentExigences.forEach(({ exigenceId }) => {
     const existing = existingReponsesMap.get(exigenceId);
-    document.querySelectorAll(`input[name="etat-${exigenceId}"]`)
-      .forEach(r => { r.checked = existing?.Etat === r.value; });
+    resetRadioGroup(`etat-${exigenceId}`, `etat-group-${exigenceId}`, `err-etat-${exigenceId}`, existing?.Etat ?? '');
     document.getElementById(`commentaire-${exigenceId}`).value = existing?.Commentaire ?? '';
-    document.getElementById(`etat-group-${exigenceId}`).classList.remove('invalid');
-    document.getElementById(`err-etat-${exigenceId}`).classList.remove('visible');
   });
 });
 
@@ -501,51 +360,38 @@ el.resetBtn.addEventListener('click', () => {
 el.submitBtn.addEventListener('click', async () => {
   if (isCurrentBilanLocked()) return;
   if (!validateSelection())   return;
-  if (!validateEtats())       return;
+  if (!validateRadioGroups(
+    currentExigences.map(({ exigenceId }) => ({
+      groupName: `etat-${exigenceId}`,
+      groupId:   `etat-group-${exigenceId}`,
+      errId:     `err-etat-${exigenceId}`,
+    }))
+  )) return;
 
   el.submitBtn.disabled = true;
-
   try {
-    const actions = [];
+    const actions = currentExigences
+      .filter(({ exigenceId }) => getRadioValue(`etat-${exigenceId}`) !== null)
+      .map(({ exigenceId }) => {
+        const etat        = getRadioValue(`etat-${exigenceId}`);
+        const commentaire = document.getElementById(`commentaire-${exigenceId}`).value.trim();
+        const existing    = existingReponsesMap.get(exigenceId);
+        const fields      = { Etat: etat, Commentaire: commentaire };
+        return existing
+          ? ['UpdateRecord', options.tableReponseBilanSoft, existing.id, fields]
+          : ['AddRecord',    options.tableReponseBilanSoft, null, { BilanSoft: currentBilanSoftId, Exigence: exigenceId, ...fields }];
+      });
 
-    currentExigences.forEach(({ exigenceId }) => {
-      const etatEl      = document.querySelector(`input[name="etat-${exigenceId}"]:checked`);
-      if (!etatEl) return;
-
-      const etat        = etatEl.value;
-      const commentaire = document.getElementById(`commentaire-${exigenceId}`).value.trim();
-      const existing    = existingReponsesMap.get(exigenceId);
-      const fields      = { Etat: etat, Commentaire: commentaire };
-
-      if (existing) {
-        actions.push(['UpdateRecord', options.tableReponseBilanSoft, existing.id, fields]);
-      } else {
-        actions.push(['AddRecord', options.tableReponseBilanSoft, null, {
-          BilanSoft: currentBilanSoftId,
-          Exigence:  exigenceId,
-          ...fields,
-        }]);
-      }
-    });
-
-    if (actions.length) {
-      await grist.docApi.applyUserActions(actions);
-    }
+    if (actions.length) await applyActions(actions);
 
     const n = actions.length;
-    showFeedback(
-      el.feedback,
-      `✅ ${n} réponse${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} avec succès !`,
-      'success'
-    );
+    showFeedback(el.feedback, `✅ ${n} réponse${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} avec succès !`, 'success');
 
     allReponseBilanSoft = await fetchTableRows(options.tableReponseBilanSoft);
-    buildExistingReponsesMap();
+    refreshReponsesMap();
     renderExigences(currentExigences, false);
     updateCountBadge();
-
   } catch (err) {
-    console.error('[reponseBilanSoft] Erreur soumission :', err);
     showFeedback(el.feedback, `❌ Erreur : ${err.message ?? "Impossible d'enregistrer."}`, 'error');
   } finally {
     el.submitBtn.disabled = false;
@@ -568,15 +414,14 @@ function applyOptions(opts) {
 }
 
 document.getElementById('cfg-save').addEventListener('click', async () => {
-  options.color                 = el.cfgColor.value                         || DEFAULT_OPTIONS.color;
-  options.tableCDC              = el.cfgTableCDC.value.trim()               || DEFAULT_OPTIONS.tableCDC;
-  options.tableExigenceCDC      = el.cfgTableExigenceCDC.value.trim()       || DEFAULT_OPTIONS.tableExigenceCDC;
-  options.tableExigence         = el.cfgTableExigence.value.trim()          || DEFAULT_OPTIONS.tableExigence;
-  options.tableBilanSoft        = el.cfgTableBilanSoft.value.trim()         || DEFAULT_OPTIONS.tableBilanSoft;
-  options.tableReponseBilanSoft = el.cfgTableReponseBilanSoft.value.trim()  || DEFAULT_OPTIONS.tableReponseBilanSoft;
-  options.tableOrganisation     = el.cfgTableOrganisation.value.trim()      || DEFAULT_OPTIONS.tableOrganisation;
-  options.tableSoftware         = el.cfgTableSoftware.value.trim()          || DEFAULT_OPTIONS.tableSoftware;
-
+  options.color                 = el.cfgColor.value                        || DEFAULT_OPTIONS.color;
+  options.tableCDC              = el.cfgTableCDC.value.trim()              || DEFAULT_OPTIONS.tableCDC;
+  options.tableExigenceCDC      = el.cfgTableExigenceCDC.value.trim()      || DEFAULT_OPTIONS.tableExigenceCDC;
+  options.tableExigence         = el.cfgTableExigence.value.trim()         || DEFAULT_OPTIONS.tableExigence;
+  options.tableBilanSoft        = el.cfgTableBilanSoft.value.trim()        || DEFAULT_OPTIONS.tableBilanSoft;
+  options.tableReponseBilanSoft = el.cfgTableReponseBilanSoft.value.trim() || DEFAULT_OPTIONS.tableReponseBilanSoft;
+  options.tableOrganisation     = el.cfgTableOrganisation.value.trim()     || DEFAULT_OPTIONS.tableOrganisation;
+  options.tableSoftware         = el.cfgTableSoftware.value.trim()         || DEFAULT_OPTIONS.tableSoftware;
   await grist.setOptions(options);
   applyOptions(options);
   el.configPanel.classList.remove('open');
@@ -586,10 +431,7 @@ document.getElementById('cfg-save').addEventListener('click', async () => {
 // ─── Init Grist ──────────────────────────────────────────────────────────────
 grist.ready({
   requiredAccess: 'full',
-  onEditOptions() {
-    applyOptions(options);
-    el.configPanel.classList.add('open');
-  },
+  onEditOptions() { applyOptions(options); el.configPanel.classList.add('open'); },
 });
 
 grist.onOptions(async (opts) => {
