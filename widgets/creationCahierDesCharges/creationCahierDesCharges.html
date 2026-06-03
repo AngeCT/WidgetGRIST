@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Création Cahier des Charges</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <link rel="stylesheet" href="creationCahierDesCharges.css" />
+</head>
+<body>
+
+  <div id="loading">⏳ Chargement…</div>
+
+  <div id="config-panel">
+    <h3>⚙️ Configuration</h3>
+    <label for="cfg-color">Couleur d'accentuation</label>
+    <input type="color" id="cfg-color" value="#3ddc84" />
+    <label for="cfg-table-cdc">Table CahierDesCharges</label>
+    <input type="text" id="cfg-table-cdc" placeholder="CahierDesCharges" />
+    <label for="cfg-table-exigence-cdc">Table ExigenceCDC</label>
+    <input type="text" id="cfg-table-exigence-cdc" placeholder="ExigenceCDC" />
+    <label for="cfg-table-exigence">Table Exigence</label>
+    <input type="text" id="cfg-table-exigence" placeholder="Exigence" />
+    <button id="cfg-save">💾 Enregistrer</button>
+  </div>
+
+  <div id="widget-container" hidden>
+    <header>
+      <h2 id="widget-title"></h2>
+    </header>
+
+    <!-- ── Panneau de sélection ──────────────────────────────────────────── -->
+    <div class="selection-panel">
+
+      <!-- Segmented control -->
+      <div class="segmented-control">
+        <button type="button" class="seg-btn active" id="btn-mode-existing">📂 CDC existant</button>
+        <button type="button" class="seg-btn"        id="btn-mode-new">➕ Nouveau CDC</button>
+      </div>
+
+      <!-- Champ unique : combobox en mode "existant", texte libre en mode "nouveau" -->
+      <div class="field">
+        <label id="field-label">Cahier des Charges <span class="required">*</span></label>
+        <div class="combobox">
+          <input type="text" id="cdc-input" placeholder="Rechercher un CDC…" autocomplete="off" />
+          <div class="combobox-dropdown" id="cdc-dropdown" hidden></div>
+        </div>
+        <input type="hidden" id="cdc-id" />
+        <span class="error-msg" id="err-cdc">Veuillez sélectionner un cahier des charges.</span>
+      </div>
+
+      <!-- Bouton unique dont le libellé s'adapte -->
+      <button type="button" id="action-btn" class="btn-action">📂 Charger</button>
+    </div>
+
+    <!-- ── Section édition CDC ───────────────────────────────────────────── -->
+    <div id="cdc-section" hidden>
+
+      <div class="cdc-header">
+        <div class="field cdc-name-field">
+          <label>Nom du CDC</label>
+          <input type="text" id="cdc-name-edit" />
+        </div>
+        <span id="dirty-badge" class="dirty-badge" hidden>● Modifications non enregistrées</span>
+      </div>
+
+      <div class="exigences-header">
+        <h3>Exigences associées</h3>
+        <span id="exigences-count" class="count-badge">0 exigence</span>
+      </div>
+
+      <div id="exigences-list"></div>
+
+      <div id="empty-state" class="empty-state">
+        Aucune exigence. Utilisez le champ ci-dessous pour en ajouter.
+      </div>
+
+      <div class="add-exigence-row">
+        <div class="combobox add-combobox">
+          <input type="text" id="add-exigence-search" placeholder="Rechercher une exigence à ajouter…" autocomplete="off" />
+          <div class="combobox-dropdown" id="add-exigence-dropdown" hidden></div>
+        </div>
+        <input type="hidden" id="add-exigence-id" />
+        <button type="button" id="add-exigence-btn" class="btn-add">➕ Ajouter</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="reset-btn">🔄 Annuler</button>
+        <button type="button" id="save-btn">💾 Enregistrer</button>
+      </div>
+    </div>
+
+    <div id="feedback" hidden></div>
+  </div>
+
+  <span id="version-badge"></span>
+  <script src="creationCahierDesCharges.js" type="module"></script>
+</body>
+</html>
