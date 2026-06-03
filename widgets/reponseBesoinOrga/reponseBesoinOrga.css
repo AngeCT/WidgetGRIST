@@ -1,0 +1,306 @@
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Variables ───────────────────────────────────────────────────────────── */
+:root {
+  --accent:      #3ddc84;
+  --bg:          #111827;
+  --surface:     #1F2937;
+  --surface-alt: #374151;
+  --text:        #E5E7EB;
+  --text-muted:  #9CA3AF;
+  --border:      #374151;
+  --danger:      #F87171;
+  --success:     #34D399;
+  --info:        #60A5FA;
+  --warning:     #FBBF24;
+  --radius:      4px;
+  /* Palette notes P0→P4 */
+  --p0: #6B7280;
+  --p1: #60A5FA;
+  --p2: #3ddc84;
+  --p3: #FBBF24;
+  --p4: #F87171;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+#loading { color: var(--text-muted); text-align: center; padding: 24px 0; }
+
+/* ── Config panel ────────────────────────────────────────────────────────── */
+#config-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+  display: none; flex-direction: column; gap: 8px;
+}
+#config-panel.open { display: flex; }
+#config-panel h3 {
+  font-size: 0.9rem; font-weight: 600; color: var(--text);
+  margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;
+}
+#config-panel label { font-size: 0.85rem; color: var(--text-muted); }
+#config-panel input {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  padding: 8px 12px; font-size: 0.9rem; width: 100%;
+}
+#config-panel input[type="color"] { padding: 4px; height: 38px; }
+#config-panel input:focus { outline: none; border-color: var(--accent); }
+#cfg-save {
+  margin-top: 8px; background: var(--accent); color: #111;
+  border: none; border-radius: var(--radius); padding: 9px 16px;
+  font-weight: 700; font-size: 0.9rem; cursor: pointer;
+  align-self: flex-start; transition: opacity 0.2s;
+}
+#cfg-save:hover { opacity: 0.85; }
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+header { padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+#widget-title { font-size: 1.25rem; font-weight: 600; }
+
+/* ── Panneau sélection (2 colonnes) ──────────────────────────────────────── */
+.selection-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+  margin-bottom: 20px;
+}
+.selection-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+/* ── Bandeau BesoinOrga ──────────────────────────────────────────────────── */
+#besoin-info {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  margin-bottom: 12px;
+}
+.besoin-info-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.besoin-info-label {
+  font-size: 0.75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+}
+.besoin-info-value { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.besoin-info-value.valid     { color: var(--success); }
+.besoin-info-value.not-valid { color: var(--danger); }
+.besoin-info-separator { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+/* ── Version select ──────────────────────────────────────────────────────── */
+.version-select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  padding: 5px 10px; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; width: auto !important; min-width: 100px;
+}
+.version-select:focus { outline: none; border-color: var(--accent); }
+
+/* ── Bouton Nouvelle version ─────────────────────────────────────────────── */
+.btn-new-version {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text-muted);
+  padding: 5px 12px; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: border-color 0.2s, color 0.2s;
+}
+.btn-new-version:hover    { border-color: var(--accent); color: var(--accent); }
+.btn-new-version:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Bouton Valider / Dévalider ──────────────────────────────────────────── */
+.btn-validate {
+  background: transparent; border: 1px solid var(--warning);
+  border-radius: var(--radius); color: var(--warning);
+  padding: 5px 14px; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap; margin-left: auto;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.btn-validate:hover    { background: var(--warning); color: #111; }
+.btn-validate:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-validate.btn-devalidate { border-color: var(--danger); color: var(--danger); }
+.btn-validate.btn-devalidate:hover { background: var(--danger); color: #111; border-color: var(--danger); }
+
+/* ── Bannière lecture seule ──────────────────────────────────────────────── */
+#locked-banner {
+  background: rgba(52, 211, 153, 0.08); border: 1px solid var(--success);
+  border-left-width: 4px; border-radius: var(--radius);
+  padding: 10px 16px; margin-bottom: 20px;
+  font-size: 0.9rem; font-weight: 600; color: var(--success);
+}
+
+/* ── Champ générique ─────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label {
+  font-size: 0.8rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+}
+.required { color: var(--accent); margin-left: 2px; }
+
+input[type="text"], select, textarea {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  padding: 10px 12px; font-size: 0.95rem; font-family: inherit;
+  transition: border-color 0.2s; width: 100%;
+}
+input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+input.invalid, select.invalid { border-color: var(--danger) !important; }
+textarea { resize: vertical; min-height: 72px; }
+textarea[readonly] { opacity: 0.65; cursor: default; resize: none; }
+
+/* ── Erreurs ─────────────────────────────────────────────────────────────── */
+.error-msg         { font-size: 0.8rem; color: var(--danger); display: none; margin-top: 2px; }
+.error-msg.visible { display: block; }
+
+/* ── Bouton charger ──────────────────────────────────────────────────────── */
+#load-btn {
+  background: var(--surface-alt); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 11px 20px; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s; align-self: flex-start;
+}
+#load-btn:hover    { border-color: var(--accent); color: var(--accent); }
+#load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Combobox ────────────────────────────────────────────────────────────── */
+.combobox { position: relative; }
+.combobox-dropdown {
+  position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+  background: var(--surface-alt); border: 1px solid var(--border);
+  border-radius: var(--radius); max-height: 200px; overflow-y: auto; z-index: 100;
+}
+.combobox-option { padding: 10px 12px; cursor: pointer; font-size: 0.9rem; color: var(--text); }
+.combobox-option:hover,
+.combobox-option.active { background: var(--surface); color: var(--accent); }
+.combobox-empty { padding: 10px 12px; font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+
+/* ── En-tête exigences ───────────────────────────────────────────────────── */
+.exigences-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+}
+.exigences-header h3 { font-size: 1rem; font-weight: 600; }
+.count-badge {
+  background: var(--surface-alt); color: var(--text-muted);
+  font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 12px;
+}
+
+/* ── Carte exigence ──────────────────────────────────────────────────────── */
+#exigences-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.exigence-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; transition: border-color 0.2s;
+}
+.exigence-card:focus-within:not(.locked) { border-color: var(--accent); }
+.exigence-card.pre-filled { border-left: 3px solid var(--success); }
+.exigence-card.locked     { opacity: 0.85; border-left: 3px solid var(--text-muted); }
+
+.card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; background: var(--surface-alt); border-bottom: 1px solid var(--border);
+}
+.card-index {
+  font-size: 0.75rem; font-weight: 700; color: var(--accent);
+  background: rgba(61, 220, 132, 0.1); padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+}
+.card-title { font-size: 0.9rem; font-weight: 600; color: var(--text); flex: 1; }
+.card-answered-badge {
+  font-size: 0.7rem; font-weight: 700; color: var(--success);
+  background: rgba(52, 211, 153, 0.1); padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+}
+.card-locked-badge { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+.card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Groupe radio ────────────────────────────────────────────────────────── */
+.radio-group {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 3px; border: 1px solid transparent;
+  border-radius: var(--radius); transition: border-color 0.2s;
+}
+.radio-group.invalid { border-color: var(--danger); }
+
+/* Note group : wrap automatique sur petits écrans */
+.note-group { gap: 6px; }
+
+.radio-option { display: flex; align-items: center; cursor: pointer; }
+.radio-option input[type="radio"] { display: none; }
+.radio-label {
+  display: inline-flex; align-items: center;
+  padding: 9px 16px; border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--text-muted); background: var(--bg);
+  cursor: pointer; user-select: none; white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.radio-label:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── Couleurs des notes P0→P4 (sélectionnées) ────────────────────────────── */
+.radio-option input[type="radio"][value="P0"]:checked + .radio-label {
+  background: var(--p0); border-color: var(--p0); color: #fff;
+}
+.radio-option input[type="radio"][value="P1"]:checked + .radio-label {
+  background: var(--p1); border-color: var(--p1); color: #111;
+}
+.radio-option input[type="radio"][value="P2"]:checked + .radio-label {
+  background: var(--p2); border-color: var(--p2); color: #111;
+}
+.radio-option input[type="radio"][value="P3"]:checked + .radio-label {
+  background: var(--p3); border-color: var(--p3); color: #111;
+}
+.radio-option input[type="radio"][value="P4"]:checked + .radio-label {
+  background: var(--p4); border-color: var(--p4); color: #111;
+}
+
+/* ── État verrouillé ─────────────────────────────────────────────────────── */
+.exigence-card.locked .radio-label          { pointer-events: none; cursor: default; }
+.exigence-card.locked .radio-option input[type="radio"]:not(:checked) + .radio-label { opacity: 0.3; }
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+.form-actions { display: flex; gap: 10px; margin-top: 8px; }
+#submit-btn {
+  flex: 1; background: var(--accent); color: #111; border: none;
+  border-radius: var(--radius); padding: 12px; font-size: 0.95rem;
+  font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+}
+#submit-btn:hover    { opacity: 0.85; }
+#submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+#reset-btn {
+  background: var(--surface); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 20px; font-size: 0.95rem; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+#reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+/* ── Feedback ────────────────────────────────────────────────────────────── */
+#feedback {
+  border-radius: var(--radius); padding: 12px 16px;
+  font-size: 0.9rem; margin-top: 12px;
+  border-left-width: 4px; border-left-style: solid;
+}
+#feedback.success { background: rgba(52,  211, 153, 0.1); border-color: var(--success); color: var(--success); }
+#feedback.error   { background: rgba(248, 113, 113, 0.1); border-color: var(--danger);  color: var(--danger);  }
+#feedback.info    { background: rgba(96,  165, 250, 0.1); border-color: var(--info);    color: var(--info);    }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--surface-alt); }
+
+/* ── Version badge ───────────────────────────────────────────────────────── */
+#version-badge { position: fixed; bottom: 6px; right: 8px; font-size: 10px; color: var(--surface-alt); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .selection-row { grid-template-columns: 1fr; }
+  .note-group    { flex-direction: column; }
+  .btn-validate  { margin-left: 0; }
+}

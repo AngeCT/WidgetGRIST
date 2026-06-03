@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Réponse Besoin Organisation</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <link rel="stylesheet" href="reponseBesoinOrga.css" />
+</head>
+<body>
+
+  <div id="loading">⏳ Chargement…</div>
+
+  <div id="config-panel">
+    <h3>⚙️ Configuration</h3>
+    <label for="cfg-color">Couleur d'accentuation</label>
+    <input type="color" id="cfg-color" value="#3ddc84" />
+    <label for="cfg-table-cdc">Table CahierDesCharges</label>
+    <input type="text" id="cfg-table-cdc" placeholder="CahierDesCharges" />
+    <label for="cfg-table-exigence-cdc">Table ExigenceCDC</label>
+    <input type="text" id="cfg-table-exigence-cdc" placeholder="ExigenceCDC" />
+    <label for="cfg-table-exigence">Table Exigence</label>
+    <input type="text" id="cfg-table-exigence" placeholder="Exigence" />
+    <label for="cfg-table-besoin-orga">Table BesoinOrga</label>
+    <input type="text" id="cfg-table-besoin-orga" placeholder="BesoinOrga" />
+    <label for="cfg-table-reponse-besoin-orga">Table ReponseBesoinOrga</label>
+    <input type="text" id="cfg-table-reponse-besoin-orga" placeholder="ReponseBesoinOrga" />
+    <label for="cfg-table-organisation">Table Organisation</label>
+    <input type="text" id="cfg-table-organisation" placeholder="Organisation" />
+    <button id="cfg-save">💾 Enregistrer</button>
+  </div>
+
+  <div id="widget-container" hidden>
+    <header>
+      <h2 id="widget-title"></h2>
+    </header>
+
+    <!-- ── Panneau de sélection (CDC + Organisation uniquement) ──────── -->
+    <div class="selection-panel">
+      <div class="selection-row">
+
+        <div class="field">
+          <label>Cahier des Charges <span class="required">*</span></label>
+          <div class="combobox">
+            <input type="text" id="cdc-search" placeholder="Rechercher un CDC…" autocomplete="off" />
+            <div class="combobox-dropdown" id="cdc-dropdown" hidden></div>
+          </div>
+          <input type="hidden" id="cdc-id" />
+          <span class="error-msg" id="err-cdc">Veuillez sélectionner un cahier des charges.</span>
+        </div>
+
+        <div class="field">
+          <label>Organisation <span class="required">*</span></label>
+          <div class="combobox">
+            <input type="text" id="org-search" placeholder="Rechercher une organisation…" autocomplete="off" />
+            <div class="combobox-dropdown" id="org-dropdown" hidden></div>
+          </div>
+          <input type="hidden" id="org-id" />
+          <span class="error-msg" id="err-org">Veuillez sélectionner une organisation.</span>
+        </div>
+
+      </div>
+      <button type="button" id="load-btn">🔍 Charger les exigences</button>
+    </div>
+
+    <!-- ── Bandeau info BesoinOrga ───────────────────────────────────── -->
+    <div id="besoin-info" hidden>
+      <div class="besoin-info-row">
+        <span class="besoin-info-label">Version</span>
+        <select id="besoin-version-select" class="version-select"></select>
+        <button type="button" id="new-version-btn" class="btn-new-version">➕ Nouvelle version</button>
+        <span class="besoin-info-separator"></span>
+        <span class="besoin-info-label">Validation</span>
+        <span id="besoin-isvalid" class="besoin-info-value">—</span>
+        <button type="button" id="validate-btn" class="btn-validate">🔒 Valider cette version</button>
+      </div>
+    </div>
+
+    <!-- ── Bannière lecture seule ────────────────────────────────────── -->
+    <div id="locked-banner" hidden>
+      🔒 Cette version est validée — les réponses sont en lecture seule.
+    </div>
+
+    <!-- ── Formulaire dynamique ──────────────────────────────────────── -->
+    <div id="exigences-section" hidden>
+      <div class="exigences-header">
+        <h3 id="exigences-title"></h3>
+        <span id="exigences-count" class="count-badge"></span>
+      </div>
+      <div id="exigences-list"></div>
+      <div class="form-actions" id="form-actions">
+        <button type="button" id="reset-btn">🔄 Réinitialiser</button>
+        <button type="button" id="submit-btn">💾 Enregistrer les réponses</button>
+      </div>
+    </div>
+
+    <div id="feedback" hidden></div>
+  </div>
+
+  <span id="version-badge"></span>
+  <script src="reponseBesoinOrga.js" type="module"></script>
+</body>
+</html>

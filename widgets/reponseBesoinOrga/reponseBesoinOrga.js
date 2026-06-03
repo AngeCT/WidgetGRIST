@@ -1,4 +1,4 @@
-// reponseBilanSoft.js — v5.2.0
+// reponseBesoinOrga.js — v1.1.0
 import { fetchTableRows }                                                            from '../../lib/table.js';
 import { initCombobox }                                                              from '../../lib/comboBox.js';
 import { showFeedback, setLoadingState, validateForm }                               from '../../lib/form.js';
@@ -8,19 +8,18 @@ import { addRecord, updateRecord, applyActions }                                
 import { renderRadioGroupHTML, getRadioValue, validateRadioGroups, resetRadioGroup } from '../../lib/radioGroup.js';
 import { indexBy }                                                                   from '../../lib/utils.js';
 
-const VERSION = '5.2.0';
+const VERSION = '1.1.0';
 document.getElementById('version-badge').textContent = `v${VERSION}`;
 
 const DEFAULT_OPTIONS = {
-  title:                 'Réponse Bilan Soft',
-  color:                 '#3ddc84',
-  tableCDC:              'CahierDesCharges',
-  tableExigenceCDC:      'ExigenceCDC',
-  tableExigence:         'Exigence',
-  tableBilanSoft:        'BilanSoft',
-  tableReponseBilanSoft: 'ReponseBilanSoft',
-  tableOrganisation:     'Organisation',
-  tableSoftware:         'Software',
+  title:                  'Réponse Besoin Organisation',
+  color:                  '#3ddc84',
+  tableCDC:               'CahierDesCharges',
+  tableExigenceCDC:       'ExigenceCDC',
+  tableExigence:          'Exigence',
+  tableBesoinOrga:        'BesoinOrga',
+  tableReponseBesoinOrga: 'ReponseBesoinOrga',
+  tableOrganisation:      'Organisation',
 };
 
 let options = { ...DEFAULT_OPTIONS };
@@ -39,15 +38,11 @@ const el = {
   orgDropdown:               document.getElementById('org-dropdown'),
   orgId:                     document.getElementById('org-id'),
   errOrg:                    document.getElementById('err-org'),
-  swSearch:                  document.getElementById('sw-search'),
-  swDropdown:                document.getElementById('sw-dropdown'),
-  swId:                      document.getElementById('sw-id'),
-  errSw:                     document.getElementById('err-sw'),
   loadBtn:                   document.getElementById('load-btn'),
-  bilanInfo:                 document.getElementById('bilan-info'),
-  bilanVersionSelect:        document.getElementById('bilan-version-select'),
+  besoinInfo:                document.getElementById('besoin-info'),
+  besoinVersionSelect:       document.getElementById('besoin-version-select'),
   newVersionBtn:             document.getElementById('new-version-btn'),
-  bilanIsValid:              document.getElementById('bilan-isvalid'),
+  besoinIsValid:             document.getElementById('besoin-isvalid'),
   validateBtn:               document.getElementById('validate-btn'),
   lockedBanner:              document.getElementById('locked-banner'),
   exigencesSection:          document.getElementById('exigences-section'),
@@ -61,85 +56,81 @@ const el = {
   cfgTableCDC:               document.getElementById('cfg-table-cdc'),
   cfgTableExigenceCDC:       document.getElementById('cfg-table-exigence-cdc'),
   cfgTableExigence:          document.getElementById('cfg-table-exigence'),
-  cfgTableBilanSoft:         document.getElementById('cfg-table-bilan-soft'),
-  cfgTableReponseBilanSoft:  document.getElementById('cfg-table-reponse-bilan-soft'),
+  cfgTableBesoinOrga:        document.getElementById('cfg-table-besoin-orga'),
+  cfgTableReponseBesoinOrga: document.getElementById('cfg-table-reponse-besoin-orga'),
   cfgTableOrganisation:      document.getElementById('cfg-table-organisation'),
-  cfgTableSoftware:          document.getElementById('cfg-table-software'),
 };
 
-let allCDC              = [];
-let allOrganisations    = [];
-let allSoftwares        = [];
-let allExigencesCDC     = [];
-let allExigences        = [];
-let allBilanSoft        = [];
-let allReponseBilanSoft = [];
+let allCDC               = [];
+let allOrganisations     = [];
+let allExigencesCDC      = [];
+let allExigences         = [];
+let allBesoinOrga        = [];
+let allReponseBesoinOrga = [];
 
-let currentTripletBilans = [];
-let currentBilanSoftId   = null;
-let existingReponsesMap  = new Map();
-let currentExigences     = [];
+let currentPairBesoin   = [];
+let currentBesoinOrgaId = null;
+let existingReponsesMap = new Map();
+let currentExigences    = [];
 
-const ETATS = [
-  { value: 'OK',    label: '✅ OK'    },
-  { value: 'KO', label: '❌ KO' },
-  { value: 'Partiel', label: '⚠️ Partiel' },
+const NOTES = [
+  { value: 'P0', label: 'P0 — Non concerné' },
+  { value: 'P1', label: 'P1 — Faible'       },
+  { value: 'P2', label: 'P2 — Modéré'       },
+  { value: 'P3', label: 'P3 — Important'    },
+  { value: 'P4', label: 'P4 — Critique'     },
 ];
 
 async function loadAllData() {
   try {
-    const [cdcRows, orgRows, swRows, exigCDCRows, exigRows, bilanRows, repBilanRows] =
+    const [cdcRows, orgRows, exigCDCRows, exigRows, besoinRows, repBesoinRows] =
       await Promise.all([
         fetchTableRows(options.tableCDC),
         fetchTableRows(options.tableOrganisation),
-        fetchTableRows(options.tableSoftware),
         fetchTableRows(options.tableExigenceCDC),
         fetchTableRows(options.tableExigence),
-        fetchTableRows(options.tableBilanSoft),
-        fetchTableRows(options.tableReponseBilanSoft),
+        fetchTableRows(options.tableBesoinOrga),
+        fetchTableRows(options.tableReponseBesoinOrga),
       ]);
-    allCDC              = cdcRows.map(r => ({ id: r.id, name: r.Nom  || `#${r.id}` }));
-    allOrganisations    = orgRows.map(r => ({ id: r.id, name: r.Nom  || r.Name || `#${r.id}` }));
-    allSoftwares        = swRows.map(r  => ({ id: r.id, name: r.Nom  || r.Name || `#${r.id}` }));
-    allExigencesCDC     = exigCDCRows;
-    allExigences        = exigRows;
-    allBilanSoft        = bilanRows;
-    allReponseBilanSoft = repBilanRows;
+    allCDC               = cdcRows.map(r => ({ id: r.id, name: r.Nom || `#${r.id}` }));
+    allOrganisations     = orgRows.map(r => ({ id: r.id, name: r.Nom || r.Name || `#${r.id}` }));
+    allExigencesCDC      = exigCDCRows;
+    allExigences         = exigRows;
+    allBesoinOrga        = besoinRows;
+    allReponseBesoinOrga = repBesoinRows;
   } catch (e) {
-    console.error('[reponseBilanSoft] Erreur chargement :', e);
+    console.error('[reponseBesoinOrga] Erreur chargement :', e);
     showFeedback(el.feedback, '❌ Erreur lors du chargement des données.', 'error');
   }
 }
 
-initCombobox({ searchInput: el.cdcSearch, hiddenInput: el.cdcId, dropdown: el.cdcDropdown, errorEl: el.errCdc, getItems: () => allCDC,           filterMode: 'includes' });
+initCombobox({ searchInput: el.cdcSearch, hiddenInput: el.cdcId, dropdown: el.cdcDropdown, errorEl: el.errCdc, getItems: () => allCDC,          filterMode: 'includes' });
 initCombobox({ searchInput: el.orgSearch, hiddenInput: el.orgId, dropdown: el.orgDropdown, errorEl: el.errOrg, getItems: () => allOrganisations, filterMode: 'includes' });
-initCombobox({ searchInput: el.swSearch,  hiddenInput: el.swId,  dropdown: el.swDropdown,  errorEl: el.errSw,  getItems: () => allSoftwares,      filterMode: 'includes' });
 
 function validateSelection() {
   return validateForm([
     { fieldId: 'cdc-id', errId: 'err-cdc', visualId: 'cdc-search' },
     { fieldId: 'org-id', errId: 'err-org', visualId: 'org-search' },
-    { fieldId: 'sw-id',  errId: 'err-sw',  visualId: 'sw-search'  },
   ]);
 }
 
-function isCurrentBilanLocked() {
-  return !!(currentTripletBilans.find(b => b.id === currentBilanSoftId)?.IsValid);
+function isCurrentBesoinLocked() {
+  return !!(currentPairBesoin.find(b => b.id === currentBesoinOrgaId)?.IsValid);
 }
 
 function refreshReponsesMap() {
   existingReponsesMap = indexBy(
-    allReponseBilanSoft.filter(r => Number(r.BilanSoft) === currentBilanSoftId),
+    allReponseBesoinOrga.filter(r => Number(r.BesoinOrga) === currentBesoinOrgaId),
     r => Number(r.Exigence),
-    r => ({ id: r.id, Etat: r.Etat ?? '', Commentaire: r.Commentaire ?? '' })
+    r => ({ id: r.id, Note: r.Note ?? '', Commentaire: r.Commentaire ?? '' })
   );
 }
 
-function updateIsValidDisplay(bilan) {
-  const isValid = !!(bilan?.IsValid);
-  el.bilanIsValid.textContent = isValid ? '✅ Validé' : '❌ Non validé';
-  el.bilanIsValid.className   = `bilan-info-value ${isValid ? 'valid' : 'not-valid'}`;
-  el.validateBtn.textContent  = isValid ? '🔓 Dévalider cette version' : '🔒 Valider cette version';
+function updateIsValidDisplay(besoin) {
+  const isValid = !!(besoin?.IsValid);
+  el.besoinIsValid.textContent = isValid ? '✅ Validé' : '❌ Non validé';
+  el.besoinIsValid.className   = `besoin-info-value ${isValid ? 'valid' : 'not-valid'}`;
+  el.validateBtn.textContent   = isValid ? '🔓 Dévalider cette version' : '🔒 Valider cette version';
   el.validateBtn.classList.toggle('btn-devalidate', isValid);
   el.lockedBanner.hidden    = !isValid;
   el.formActions.hidden     = isValid;
@@ -172,11 +163,11 @@ function renderExigences(exigences, isLocked = false) {
       </div>
       <div class="card-body">
         <div class="field">
-          <label>État${isLocked ? '' : ' <span class="required">*</span>'}</label>
-          <div class="radio-group" id="etat-group-${exigenceId}">
-            ${renderRadioGroupHTML(`etat-${exigenceId}`, ETATS, existing?.Etat ?? '', isLocked)}
+          <label>Note${isLocked ? '' : ' <span class="required">*</span>'}</label>
+          <div class="radio-group note-group" id="note-group-${exigenceId}">
+            ${renderRadioGroupHTML(`note-${exigenceId}`, NOTES, existing?.Note ?? '', isLocked)}
           </div>
-          <span class="error-msg" id="err-etat-${exigenceId}">Veuillez sélectionner un état.</span>
+          <span class="error-msg" id="err-note-${exigenceId}">Veuillez sélectionner une note.</span>
         </div>
         <div class="field">
           <label for="commentaire-${exigenceId}">Commentaire</label>
@@ -189,7 +180,7 @@ function renderExigences(exigences, isLocked = false) {
   });
 }
 
-function loadExigencesForCurrentBilan() {
+function loadExigencesForCurrentBesoin() {
   const cdcId             = parseInt(el.cdcId.value, 10);
   const exigencesCDCDuCDC = allExigencesCDC.filter(r => Number(r.CDC) === cdcId);
   if (!exigencesCDCDuCDC.length) {
@@ -206,7 +197,7 @@ function loadExigencesForCurrentBilan() {
   }));
   el.exigencesTitle.textContent = allCDC.find(c => c.id === cdcId)?.name ?? 'Exigences';
   updateCountBadge();
-  renderExigences(currentExigences, isCurrentBilanLocked());
+  renderExigences(currentExigences, isCurrentBesoinLocked());
   el.exigencesSection.hidden = false;
   el.feedback.hidden         = true;
 }
@@ -216,53 +207,51 @@ el.loadBtn.addEventListener('click', async () => {
   el.loadBtn.disabled = true;
   const cdcId = parseInt(el.cdcId.value, 10);
   const orgId = parseInt(el.orgId.value, 10);
-  const swId  = parseInt(el.swId.value,  10);
-  currentTripletBilans = allBilanSoft.filter(r =>
-    Number(r.CDC) === cdcId && Number(r.Organisation) === orgId && Number(r.Software) === swId
+  currentPairBesoin = allBesoinOrga.filter(r =>
+    Number(r.CDC) === cdcId && Number(r.Organisation) === orgId
   );
-  if (!currentTripletBilans.length) {
+  if (!currentPairBesoin.length) {
     try {
-      const newId    = await addRecord(options.tableBilanSoft, { CDC: cdcId, Organisation: orgId, Software: swId, Version: '1' }); // ← '1'
-      const newBilan = { id: newId, CDC: cdcId, Organisation: orgId, Software: swId, Version: '1', IsValid: false };
-      allBilanSoft.push(newBilan);
-      currentTripletBilans = [newBilan];
-      showFeedback(el.feedback, '✅ Nouveau BilanSoft créé automatiquement (v1).', 'success');
+      const newId     = await addRecord(options.tableBesoinOrga, { CDC: cdcId, Organisation: orgId, Version: '1' }); // ← '1'
+      const newBesoin = { id: newId, CDC: cdcId, Organisation: orgId, Version: '1', IsValid: false };
+      allBesoinOrga.push(newBesoin);
+      currentPairBesoin = [newBesoin];
+      showFeedback(el.feedback, '✅ Nouveau BesoinOrga créé automatiquement (v1).', 'success');
     } catch (err) {
-      showFeedback(el.feedback, `❌ Erreur création BilanSoft : ${err.message}`, 'error');
+      showFeedback(el.feedback, `❌ Erreur création BesoinOrga : ${err.message}`, 'error');
       el.loadBtn.disabled = false;
       return;
     }
   }
-  const defaultBilan = currentTripletBilans[currentTripletBilans.length - 1];
-  currentBilanSoftId = defaultBilan.id;
-  populateVersionSelect(el.bilanVersionSelect, currentTripletBilans, currentBilanSoftId);
-  updateIsValidDisplay(defaultBilan);
-  el.bilanInfo.hidden = false;
-  loadExigencesForCurrentBilan();
+  const defaultBesoin = currentPairBesoin[currentPairBesoin.length - 1];
+  currentBesoinOrgaId = defaultBesoin.id;
+  populateVersionSelect(el.besoinVersionSelect, currentPairBesoin, currentBesoinOrgaId);
+  updateIsValidDisplay(defaultBesoin);
+  el.besoinInfo.hidden = false;
+  loadExigencesForCurrentBesoin();
   el.loadBtn.disabled = false;
 });
 
-el.bilanVersionSelect.addEventListener('change', () => {
-  currentBilanSoftId = parseInt(el.bilanVersionSelect.value, 10);
-  updateIsValidDisplay(currentTripletBilans.find(b => b.id === currentBilanSoftId));
-  loadExigencesForCurrentBilan();
+el.besoinVersionSelect.addEventListener('change', () => {
+  currentBesoinOrgaId = parseInt(el.besoinVersionSelect.value, 10);
+  updateIsValidDisplay(currentPairBesoin.find(b => b.id === currentBesoinOrgaId));
+  loadExigencesForCurrentBesoin();
 });
 
 el.newVersionBtn.addEventListener('click', async () => {
-  const version = nextVersion(currentTripletBilans); // ← nextVersion
+  const version = nextVersion(currentPairBesoin); // ← nextVersion
   el.newVersionBtn.disabled = true;
   try {
-    const cdcId = parseInt(el.cdcId.value, 10);
-    const orgId = parseInt(el.orgId.value, 10);
-    const swId  = parseInt(el.swId.value,  10);
-    const newId    = await addRecord(options.tableBilanSoft, { CDC: cdcId, Organisation: orgId, Software: swId, Version: version });
-    const newBilan = { id: newId, CDC: cdcId, Organisation: orgId, Software: swId, Version: version, IsValid: false };
-    allBilanSoft.push(newBilan);
-    currentTripletBilans.push(newBilan);
-    currentBilanSoftId = newId;
-    populateVersionSelect(el.bilanVersionSelect, currentTripletBilans, currentBilanSoftId);
-    updateIsValidDisplay(newBilan);
-    loadExigencesForCurrentBilan();
+    const cdcId     = parseInt(el.cdcId.value, 10);
+    const orgId     = parseInt(el.orgId.value, 10);
+    const newId     = await addRecord(options.tableBesoinOrga, { CDC: cdcId, Organisation: orgId, Version: version });
+    const newBesoin = { id: newId, CDC: cdcId, Organisation: orgId, Version: version, IsValid: false };
+    allBesoinOrga.push(newBesoin);
+    currentPairBesoin.push(newBesoin);
+    currentBesoinOrgaId = newId;
+    populateVersionSelect(el.besoinVersionSelect, currentPairBesoin, currentBesoinOrgaId);
+    updateIsValidDisplay(newBesoin);
+    loadExigencesForCurrentBesoin();
     showFeedback(el.feedback, `✅ Nouvelle version ${version} créée.`, 'success');
   } catch (err) {
     showFeedback(el.feedback, `❌ Erreur : ${err.message}`, 'error');
@@ -272,20 +261,20 @@ el.newVersionBtn.addEventListener('click', async () => {
 });
 
 el.validateBtn.addEventListener('click', async () => {
-  const nextValue = !isCurrentBilanLocked();
+  const nextValue = !isCurrentBesoinLocked();
   const message   = nextValue
     ? '⚠️ Confirmer la validation ?\n\nCette version passera en lecture seule.\n\nContinuer ?'
     : '⚠️ Confirmer la dévalidation ?\n\nCette version redeviendra modifiable.\n\nContinuer ?';
   if (!window.confirm(message)) return;
   el.validateBtn.disabled = true;
   try {
-    await updateRecord(options.tableBilanSoft, currentBilanSoftId, { IsValid: nextValue });
-    [currentTripletBilans, allBilanSoft].forEach(list => {
-      const b = list.find(b => b.id === currentBilanSoftId);
+    await updateRecord(options.tableBesoinOrga, currentBesoinOrgaId, { IsValid: nextValue });
+    [currentPairBesoin, allBesoinOrga].forEach(list => {
+      const b = list.find(b => b.id === currentBesoinOrgaId);
       if (b) b.IsValid = nextValue;
     });
-    const bilan = currentTripletBilans.find(b => b.id === currentBilanSoftId);
-    updateIsValidDisplay(bilan);
+    const besoin = currentPairBesoin.find(b => b.id === currentBesoinOrgaId);
+    updateIsValidDisplay(besoin);
     renderExigences(currentExigences, nextValue);
     showFeedback(el.feedback,
       nextValue ? '🔒 Version validée — formulaire en lecture seule.' : '🔓 Version dévalidée — formulaire à nouveau modifiable.',
@@ -299,41 +288,41 @@ el.validateBtn.addEventListener('click', async () => {
 });
 
 el.resetBtn.addEventListener('click', () => {
-  if (isCurrentBilanLocked()) return;
+  if (isCurrentBesoinLocked()) return;
   currentExigences.forEach(({ exigenceId }) => {
     const existing = existingReponsesMap.get(exigenceId);
-    resetRadioGroup(`etat-${exigenceId}`, `etat-group-${exigenceId}`, `err-etat-${exigenceId}`, existing?.Etat ?? '');
+    resetRadioGroup(`note-${exigenceId}`, `note-group-${exigenceId}`, `err-note-${exigenceId}`, existing?.Note ?? '');
     document.getElementById(`commentaire-${exigenceId}`).value = existing?.Commentaire ?? '';
   });
 });
 
 el.submitBtn.addEventListener('click', async () => {
-  if (isCurrentBilanLocked()) return;
-  if (!validateSelection())   return;
+  if (isCurrentBesoinLocked()) return;
+  if (!validateSelection())    return;
   if (!validateRadioGroups(
     currentExigences.map(({ exigenceId }) => ({
-      groupName: `etat-${exigenceId}`,
-      groupId:   `etat-group-${exigenceId}`,
-      errId:     `err-etat-${exigenceId}`,
+      groupName: `note-${exigenceId}`,
+      groupId:   `note-group-${exigenceId}`,
+      errId:     `err-note-${exigenceId}`,
     }))
   )) return;
   el.submitBtn.disabled = true;
   try {
     const actions = currentExigences
-      .filter(({ exigenceId }) => getRadioValue(`etat-${exigenceId}`) !== null)
+      .filter(({ exigenceId }) => getRadioValue(`note-${exigenceId}`) !== null)
       .map(({ exigenceId }) => {
-        const etat        = getRadioValue(`etat-${exigenceId}`);
+        const note        = getRadioValue(`note-${exigenceId}`);
         const commentaire = document.getElementById(`commentaire-${exigenceId}`).value.trim();
         const existing    = existingReponsesMap.get(exigenceId);
-        const fields      = { Etat: etat, Commentaire: commentaire };
+        const fields      = { Note: note, Commentaire: commentaire };
         return existing
-          ? ['UpdateRecord', options.tableReponseBilanSoft, existing.id, fields]
-          : ['AddRecord',    options.tableReponseBilanSoft, null, { BilanSoft: currentBilanSoftId, Exigence: exigenceId, ...fields }];
+          ? ['UpdateRecord', options.tableReponseBesoinOrga, existing.id, fields]
+          : ['AddRecord',    options.tableReponseBesoinOrga, null, { BesoinOrga: currentBesoinOrgaId, Exigence: exigenceId, ...fields }];
       });
     if (actions.length) await applyActions(actions);
     const n = actions.length;
     showFeedback(el.feedback, `✅ ${n} réponse${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} avec succès !`, 'success');
-    allReponseBilanSoft = await fetchTableRows(options.tableReponseBilanSoft);
+    allReponseBesoinOrga = await fetchTableRows(options.tableReponseBesoinOrga);
     refreshReponsesMap();
     renderExigences(currentExigences, false);
     updateCountBadge();
@@ -348,25 +337,23 @@ function applyOptions(opts) {
   options = { ...DEFAULT_OPTIONS, ...opts };
   el.widgetTitle.textContent = options.title;
   document.documentElement.style.setProperty('--accent', options.color);
-  el.cfgColor.value                 = options.color;
-  el.cfgTableCDC.value              = options.tableCDC;
-  el.cfgTableExigenceCDC.value      = options.tableExigenceCDC;
-  el.cfgTableExigence.value         = options.tableExigence;
-  el.cfgTableBilanSoft.value        = options.tableBilanSoft;
-  el.cfgTableReponseBilanSoft.value = options.tableReponseBilanSoft;
-  el.cfgTableOrganisation.value     = options.tableOrganisation;
-  el.cfgTableSoftware.value         = options.tableSoftware;
+  el.cfgColor.value                  = options.color;
+  el.cfgTableCDC.value               = options.tableCDC;
+  el.cfgTableExigenceCDC.value       = options.tableExigenceCDC;
+  el.cfgTableExigence.value          = options.tableExigence;
+  el.cfgTableBesoinOrga.value        = options.tableBesoinOrga;
+  el.cfgTableReponseBesoinOrga.value = options.tableReponseBesoinOrga;
+  el.cfgTableOrganisation.value      = options.tableOrganisation;
 }
 
 document.getElementById('cfg-save').addEventListener('click', async () => {
-  options.color                 = el.cfgColor.value                        || DEFAULT_OPTIONS.color;
-  options.tableCDC              = el.cfgTableCDC.value.trim()              || DEFAULT_OPTIONS.tableCDC;
-  options.tableExigenceCDC      = el.cfgTableExigenceCDC.value.trim()      || DEFAULT_OPTIONS.tableExigenceCDC;
-  options.tableExigence         = el.cfgTableExigence.value.trim()         || DEFAULT_OPTIONS.tableExigence;
-  options.tableBilanSoft        = el.cfgTableBilanSoft.value.trim()        || DEFAULT_OPTIONS.tableBilanSoft;
-  options.tableReponseBilanSoft = el.cfgTableReponseBilanSoft.value.trim() || DEFAULT_OPTIONS.tableReponseBilanSoft;
-  options.tableOrganisation     = el.cfgTableOrganisation.value.trim()     || DEFAULT_OPTIONS.tableOrganisation;
-  options.tableSoftware         = el.cfgTableSoftware.value.trim()         || DEFAULT_OPTIONS.tableSoftware;
+  options.color                  = el.cfgColor.value                          || DEFAULT_OPTIONS.color;
+  options.tableCDC               = el.cfgTableCDC.value.trim()                || DEFAULT_OPTIONS.tableCDC;
+  options.tableExigenceCDC       = el.cfgTableExigenceCDC.value.trim()        || DEFAULT_OPTIONS.tableExigenceCDC;
+  options.tableExigence          = el.cfgTableExigence.value.trim()           || DEFAULT_OPTIONS.tableExigence;
+  options.tableBesoinOrga        = el.cfgTableBesoinOrga.value.trim()         || DEFAULT_OPTIONS.tableBesoinOrga;
+  options.tableReponseBesoinOrga = el.cfgTableReponseBesoinOrga.value.trim()  || DEFAULT_OPTIONS.tableReponseBesoinOrga;
+  options.tableOrganisation      = el.cfgTableOrganisation.value.trim()       || DEFAULT_OPTIONS.tableOrganisation;
   await grist.setOptions(options);
   applyOptions(options);
   el.configPanel.classList.remove('open');
