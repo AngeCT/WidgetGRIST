@@ -1,14 +1,14 @@
-// reponseBesoinOrga.js — v1.1.0
+// reponseBesoinOrga.js — v1.2.0
 import { fetchTableRows }                                                            from '../../lib/table.js';
 import { initCombobox }                                                              from '../../lib/comboBox.js';
 import { showFeedback, setLoadingState, validateForm }                               from '../../lib/form.js';
 import { escapeHtml }                                                                from '../../lib/html.js';
-import { nextVersion, populateVersionSelect }                                        from '../../lib/version.js'; // ← nextVersion
+import { nextVersion, populateVersionSelect }                                        from '../../lib/version.js';
 import { addRecord, updateRecord, applyActions }                                     from '../../lib/gristActions.js';
 import { renderRadioGroupHTML, getRadioValue, validateRadioGroups, resetRadioGroup } from '../../lib/radioGroup.js';
 import { indexBy }                                                                   from '../../lib/utils.js';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 document.getElementById('version-badge').textContent = `v${VERSION}`;
 
 const DEFAULT_OPTIONS = {
@@ -73,12 +73,17 @@ let currentBesoinOrgaId = null;
 let existingReponsesMap = new Map();
 let currentExigences    = [];
 
+/**
+ * Échelle de note P0→P4.
+ * P0 = Critique (besoin prioritaire), P4 = Non concerné.
+ * Les couleurs CSS sont cohérentes : rouge → orange → vert → bleu → gris.
+ */
 const NOTES = [
-  { value: 'P0', label: 'P0 — Non concerné' },
-  { value: 'P1', label: 'P1 — Faible'       },
-  { value: 'P2', label: 'P2 — Modéré'       },
-  { value: 'P3', label: 'P3 — Important'    },
-  { value: 'P4', label: 'P4 — Critique'     },
+  { value: 'P0', label: 'P0 — Critique'     }, // ← rouge
+  { value: 'P1', label: 'P1 — Important'    }, // ← orange
+  { value: 'P2', label: 'P2 — Modéré'       }, // ← vert
+  { value: 'P3', label: 'P3 — Faible'       }, // ← bleu
+  { value: 'P4', label: 'P4 — Non concerné' }, // ← gris
 ];
 
 async function loadAllData() {
@@ -212,7 +217,7 @@ el.loadBtn.addEventListener('click', async () => {
   );
   if (!currentPairBesoin.length) {
     try {
-      const newId     = await addRecord(options.tableBesoinOrga, { CDC: cdcId, Organisation: orgId, Version: '1' }); // ← '1'
+      const newId     = await addRecord(options.tableBesoinOrga, { CDC: cdcId, Organisation: orgId, Version: '1' });
       const newBesoin = { id: newId, CDC: cdcId, Organisation: orgId, Version: '1', IsValid: false };
       allBesoinOrga.push(newBesoin);
       currentPairBesoin = [newBesoin];
@@ -239,7 +244,7 @@ el.besoinVersionSelect.addEventListener('change', () => {
 });
 
 el.newVersionBtn.addEventListener('click', async () => {
-  const version = nextVersion(currentPairBesoin); // ← nextVersion
+  const version = nextVersion(currentPairBesoin);
   el.newVersionBtn.disabled = true;
   try {
     const cdcId     = parseInt(el.cdcId.value, 10);
