@@ -314,6 +314,11 @@ flowchart TD
         G5["grist.setOptions"]
     end
 
+    subgraph WIDGETS["🎨 widgets"]
+        W1["creationIteration.js"]
+        W2["reponseBesoinOrga.js"]
+    end
+
     subgraph LIB["📦 lib"]
         subgraph CORE["Core Utilities"]
             HTML["html.js"]
@@ -332,35 +337,26 @@ flowchart TD
         end
     end
 
-    subgraph WIDGETS["🎨 widgets"]
-        W1["creationIteration.js"]
-        W2["reponseBesoinOrga.js"]
-    end
+    %% API → WIDGETS (l'API expose ses méthodes aux widgets)
+    G1 --> W1
+    G3 --> W1
+    G4 --> W1
+    G5 --> W1
+    G1 --> W2
+    G3 --> W2
+    G4 --> W2
+    G5 --> W2
 
-    %% Dépendances internes lib
-    GA --> TABLE
-    SELECT --> TABLE
-    COMBO --> HTML
-    RADIO --> HTML
+    %% API → LIB (l'API expose ses méthodes à la lib)
+    G1 --> GA
+    G2 --> TABLE
+    G2 --> SELECT
 
-    %% lib → API
-    GA --> G1
-    TABLE --> G2
-    SELECT --> G2
-
-    %% Widget 1 → lib
+    %% WIDGETS → LIB
     W1 --> TABLE
     W1 --> SELECT
     W1 --> COMBO
     W1 --> FORM
-
-    %% Widget 1 → API
-    W1 --> G1
-    W1 --> G3
-    W1 --> G4
-    W1 --> G5
-
-    %% Widget 2 → lib
     W2 --> TABLE
     W2 --> COMBO
     W2 --> FORM
@@ -370,11 +366,11 @@ flowchart TD
     W2 --> UTILS
     W2 --> VERSION
 
-    %% Widget 2 → API
-    W2 --> G1
-    W2 --> G3
-    W2 --> G4
-    W2 --> G5
+    %% Dépendances internes lib
+    GA --> TABLE
+    SELECT --> TABLE
+    COMBO --> HTML
+    RADIO --> HTML
 ```
 
 ## 📋 Conventions de Nommage
