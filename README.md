@@ -40,374 +40,627 @@ WidgetGRIST/
         └── deploy.yml
 ```
 
-## 📊 Diagramme d'Architecture
+## 📊 Architecture du Projet
 
-### Dépendances et flux de données
+```plantuml
+@startuml WidgetGRIST_Architecture
+!define BGCOLOR_LIB #E1F5FE
+!define BGCOLOR_WIDGET #C8E6C9
+!define BGCOLOR_API #FFCCBC
 
-```mermaid
-graph TB
-    subgraph "🌐 Grist API"
-        GRIST["grist (global)<br/>Plugin API"]
-    end
-    
-    subgraph "📦 Library - lib/"
-        subgraph "Core Utilities"
-            HTML["html.js<br/>─────────<br/>escapeHtml()<br/>createElement()<br/>clearElement()"]
-            UTILS["utils.js<br/>─────────<br/>indexBy()<br/>groupBy()<br/>sleep()<br/>coalesce()"]
-        end
-        
-        subgraph "Grist Integration"
-            GACTION["gristActions.js<br/>─────────<br/>applyActions()<br/>addRecord()<br/>updateRecord()<br/>upsertRecord()"]
-            TABLE["table.js<br/>─────────<br/>fetchTableRows()"]
-            SELECT["select.js<br/>─────────<br/>fetchDistinctValues()<br/>populateSelect()"]
-        end
-        
-        subgraph "Form Components"
-            FORM["form.js<br/>─────────<br/>showFeedback()<br/>setLoadingState()<br/>validateForm()<br/>clearValidation()<br/>toUnixTimestamp()"]
-            RADIO["radioGroup.js<br/>─────────<br/>renderRadioGroupHTML()<br/>getRadioValue()<br/>validateRadioGroups()"]
-            COMBO["comboBox.js<br/>─────────<br/>initCombobox()<br/>selectItem()<br/>filterItems()"]
-        end
-        
-        VERSION["version.js<br/>─────────<br/>nextVersion()<br/>populateVersionSelect()"]
-    end
-    
-    subgraph "🎨 Widgets"
-        W1["creationIteration.js<br/>─────────<br/>loadWorkgroups()<br/>loadSoftwares()<br/>loadSelectData()<br/>applyOptions()"]
-        W2["reponseBesoinOrga.js<br/>─────────<br/>loadAllData()<br/>renderExigences()<br/>validateSelection()"]
-    end
-    
-    %% Connections
-    GRIST -->|docApi.applyUserActions| GACTION
-    GRIST -->|docApi.fetchTable| TABLE
-    GRIST -->|onOptions, ready| W1
-    GRIST -->|onOptions, ready| W2
-    
-    GACTION --> TABLE
-    TABLE --> SELECT
-    
-    FORM -->|validation| W1
-    FORM -->|validation| W2
-    
-    COMBO -->|input rendering| W1
-    COMBO -->|input rendering| W2
-    
-    RADIO -->|input rendering| W2
-    
-    HTML -->|DOM safety| COMBO
-    HTML -->|DOM safety| RADIO
-    HTML -->|DOM safety| W2
-    
-    UTILS -->|data mapping| COMBO
-    UTILS -->|data mapping| W2
-    UTILS -->|data mapping| TABLE
-    
-    SELECT -->|populate forms| W1
-    
-    VERSION -->|version management| W2
-    
-    GACTION -->|batch actions| W2
-    
-    style HTML fill:#e1f5ff
-    style UTILS fill:#e1f5ff
-    style GACTION fill:#fff3e0
-    style TABLE fill:#fff3e0
-    style SELECT fill:#fff3e0
-    style FORM fill:#f3e5f5
-    style RADIO fill:#f3e5f5
-    style COMBO fill:#f3e5f5
-    style VERSION fill:#fff3e0
-    style W1 fill:#c8e6c9
-    style W2 fill:#c8e6c9
-    style GRIST fill:#ffccbc
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+
+package "Grist API" <<API>> #FFCCBC {
+  interface "grist (Global)" as GRIST_API {
+    +docApi: DocApi
+    +ready(config)
+    +onOptions(callback)
+    +setOptions(options)
+  }
+
+  interface "DocApi" as DOC_API {
+    +applyUserActions(actions)
+    +fetchTable(tableName)
+  }
+
+  GRIST_API --> DOC_API
+}
+
+package "WidgetGRIST/lib - Bibliothèque Réutilisable" <<LIB>> #E1F5FE {
+  component "html.js" as HTML_LIB {
+    --
+    +escapeHtml(value)
+    +createElement(tag, attrs, content)
+    +clearElement(element)
+  }
+
+  component "utils.js" as UTILS_LIB {
+    --
+    +indexBy(items, keyFn, valueFn)
+    +groupBy(items, keyFn)
+    +sleep(ms)
+    +coalesce(value, fallback)
+  }
+
+  component "gristActions.js" as GRIST_LIB {
+    --
+    +applyActions(actions)
+    +addRecord(tableName, fields)
+    +updateRecord(tableName, id, fields)
+    +upsertRecord(tableName, id, fields)
+    +buildUpsertAction(tableName, id, fields)
+  }
+
+  component "table.js" as TABLE_LIB {
+    --
+    +fetchTableRows(tableName)
+  }
+
+  component "select.js" as SELECT_LIB {
+    --
+    +fetchDistinctValues(tableName, columnName)
+    +populateSelect(element, tableName, columnName)
+  }
+
+  component "form.js" as FORM_LIB {
+    --
+    +showFeedback(element, msg, type)
+    +setLoadingState(loadingEl, containerEl, state)
+    +validateForm(rules)
+    +clearValidation(rules)
+    +toUnixTimestamp(dateStr, timeStr)
+  }
+
+  component "comboBox.js" as COMBO_LIB {
+    --
+    +initCombobox(config)
+  }
+
+  component "radioGroup.js" as RADIO_LIB {
+    --
+    +renderRadioGroupHTML(groupName, options)
+    +getRadioValue(groupName)
+    +validateRadioGroups(groups)
+    +resetRadioGroup(groupName, groupId, errId)
+  }
+
+  component "version.js" as VERSION_LIB {
+    --
+    +nextVersion(besoinList)
+    +populateVersionSelect(element, besoinList)
+  }
+}
+
+package "WidgetGRIST/widgets - Composants Spécifiques" <<WIDGET>> #C8E6C9 {
+  component "creationIteration.js" as WIDGET1 {
+    --
+    -options: WidgetOptions
+    -allWorkgroups: ComboboxItem[]
+    -workgroupCombo: ComboboxInstance
+    --
+    +loadWorkgroups()
+    +loadSoftwares()
+    +loadSelectData()
+    +applyOptions(opts)
+    +handleSubmit(event)
+  }
+
+  component "reponseBesoinOrga.js" as WIDGET2 {
+    --
+    -options: WidgetOptions
+    -allCDC: ComboboxItem[]
+    -allOrganisations: ComboboxItem[]
+    -currentBesoinOrgaId: number
+    -existingReponsesMap: Map
+    -currentExigences: Exigence[]
+    --
+    +loadAllData()
+    +renderExigences(exigences, isLocked)
+    +loadExigencesForCurrentBesoin()
+    +validateSelection()
+    +isCurrentBesoinLocked()
+    +handleLoadBesoin()
+    +handleValidateVersion()
+    +handleSubmit()
+  }
+}
+
+' Dépendances horizontales
+GRIST_API --> DOC_API
+
+GRIST_LIB --> DOC_API
+TABLE_LIB --> DOC_API
+SELECT_LIB --> TABLE_LIB
+SELECT_LIB --> DOC_API
+
+' Dépendances du Widget 1
+WIDGET1 --> TABLE_LIB
+WIDGET1 --> SELECT_LIB
+WIDGET1 --> COMBO_LIB
+WIDGET1 --> FORM_LIB
+WIDGET1 --> GRIST_API
+
+' Dépendances du Widget 2
+WIDGET2 --> TABLE_LIB
+WIDGET2 --> COMBO_LIB
+WIDGET2 --> FORM_LIB
+WIDGET2 --> RADIO_LIB
+WIDGET2 --> GRIST_LIB
+WIDGET2 --> HTML_LIB
+WIDGET2 --> UTILS_LIB
+WIDGET2 --> VERSION_LIB
+WIDGET2 --> GRIST_API
+
+note right of HTML_LIB
+  Sécurité DOM
+  Pas de dépendances
+end note
+
+note right of UTILS_LIB
+  Utilitaires purs
+  Pas de dépendances
+end note
+
+note bottom of WIDGET1
+  Création d'itération
+  Tables: Iteration, WorkGroup, Software
+end note
+
+note bottom of WIDGET2
+  Réponses aux besoins
+  Tables: BesoinOrga, Exigence, CDC, etc.
+end note
+
+@enduml
 ```
 
-### Modèle de classe détaillé
+## 📚 Diagramme de Classe - Bibliothèque (lib/)
 
-```mermaid
-classDiagram
-    direction TB
-    
-    namespace GristAPI {
-        class GlobalGrist {
-            +docApi: DocApi
-            +setOptions(opts: Record)
-            +ready(config: Config): void
-            +onOptions(callback: Function): void
-        }
-        
-        class DocApi {
-            +applyUserActions(actions: Array): Promise~Record~
-            +fetchTable(tableName: string): Promise~Record~
-        }
-    }
-    
-    namespace CoreUtilities {
-        class Html {
-            +escapeHtml(value: *): string
-            +createElement(tag: string, attrs?: Record, content?: *): HTMLElement
-            +clearElement(el: HTMLElement): void
-        }
-        
-        class Utils {
-            +indexBy(items: T[], keyFn: Function, valueFn?: Function): Map
-            +groupBy(items: T[], keyFn: Function): Record
-            +sleep(ms: number): Promise~void~
-            +coalesce(value: T|null|undefined, fallback: T): T
-        }
-    }
-    
-    namespace GristIntegration {
-        class GristActions {
-            +applyActions(actions: Array): Promise~any[]~
-            +addRecord(tableName: string, fields: Record): Promise~number~
-            +updateRecord(tableName: string, id: number, fields: Record): Promise~void~
-            +upsertRecord(tableName: string, existingId: number|null, fields: Record): Promise~number~
-            +buildUpsertAction(tableName: string, existingId: number|null, fields: Record): Array
-        }
-        
-        class Table {
-            +fetchTableRows(tableName: string): Promise~Array~
-        }
-        
-        class Select {
-            +fetchDistinctValues(tableName: string, columnName: string): Promise~string[]~
-            +populateSelect(selectEl: HTMLSelectElement, tableName: string, columnName: string, placeholder?: string): Promise~void~
-        }
-        
-        class Version {
-            +nextVersion(besoinList: Array): string
-            +populateVersionSelect(selectEl: HTMLSelectElement, besoinList: Array, currentId: number): void
-        }
-    }
-    
-    namespace FormComponents {
-        class Form {
-            +showFeedback(el: HTMLElement, msg: string, type: string, duration?: number): void
-            +setLoadingState(loadingEl: HTMLElement, containerEl: HTMLElement, state: string): void
-            +validateForm(rules: FieldRule[]): boolean
-            +clearValidation(rules: FieldRule[]): void
-            +toUnixTimestamp(dateStr: string, timeStr?: string): number|null
-        }
-        
-        class ComboBox {
-            -activeIndex: number
-            +initCombobox(config: ComboboxConfig): ComboboxInstance
-            -filterItems(query: string): ComboboxItem[]
-            -renderDropdown(filtered: ComboboxItem[]): void
-            -selectItem(item: ComboboxItem): void
-            -closeDropdown(): void
-        }
-        
-        class RadioGroup {
-            +renderRadioGroupHTML(groupName: string, options: RadioOption[], selected?: string, disabled?: boolean): string
-            +getRadioValue(groupName: string): string|null
-            +validateRadioGroups(groups: RadioGroupRule[]): boolean
-            +resetRadioGroup(groupName: string, groupId: string, errId: string, value?: string): void
-        }
-    }
-    
-    namespace Widgets {
-        class CreationIterationWidget {
-            -options: WidgetOptions
-            -allWorkgroups: ComboboxItem[]
-            -workgroupCombo: ComboboxInstance
-            +loadWorkgroups(): Promise~void~
-            +loadSoftwares(): Promise~void~
-            +loadSelectData(): Promise~void~
-            +applyOptions(opts: Record): void
-            -validateAndSubmit(): Promise~void~
-        }
-        
-        class ReponseBesoinOrgaWidget {
-            -options: WidgetOptions
-            -allCDC: ComboboxItem[]
-            -allOrganisations: ComboboxItem[]
-            -currentBesoinOrgaId: number|null
-            -existingReponsesMap: Map
-            -currentExigences: Exigence[]
-            +loadAllData(): Promise~void~
-            +renderExigences(exigences: Exigence[], isLocked?: boolean): void
-            +loadExigencesForCurrentBesoin(): void
-            +validateSelection(): boolean
-            +isCurrentBesoinLocked(): boolean
-            +refreshReponsesMap(): void
-            +updateIsValidDisplay(besoin: BesoinOrga): void
-            -handleLoadBesoin(): Promise~void~
-            -handleValidateVersion(): Promise~void~
-            -handleSubmit(): Promise~void~
-        }
-    }
-    
-    namespace Types {
-        class ComboboxItem {
-            +id: number
-            +name: string
-        }
-        
-        class ComboboxConfig {
-            +searchInput: HTMLInputElement
-            +hiddenInput: HTMLInputElement
-            +dropdown: HTMLElement
-            +errorEl?: HTMLElement
-            +getItems: Function
-            +filterMode?: 'startsWith'|'includes'
-        }
-        
-        class ComboboxInstance {
-            +reset(): void
-            +select(item: ComboboxItem): void
-            +getSelected(): ComboboxItem|null
-        }
-        
-        class FieldRule {
-            +fieldId: string
-            +errId: string
-            +visualId?: string
-            +validator?: Function
-        }
-        
-        class RadioOption {
-            +value: string
-            +label: string
-        }
-        
-        class RadioGroupRule {
-            +groupName: string
-            +groupId: string
-            +errId: string
-        }
-        
-        class WidgetOptions {
-            +title: string
-            +color: string
-            +tableIteration?: string
-            +tableWorkgroup?: string
-            +tableSoftware?: string
-        }
-        
-        class Exigence {
-            +exigenceCDCId: number
-            +exigenceId: number
-            +nom: string
-        }
-        
-        class BesoinOrga {
-            +id: number
-            +CDC: number
-            +Organisation: number
-            +Version: string
-            +IsValid: boolean
-        }
-    }
-    
-    %% Relationships
-    GlobalGrist --> DocApi
-    
-    CreationIterationWidget --> Html
-    CreationIterationWidget --> Utils
-    CreationIterationWidget --> GristActions
-    CreationIterationWidget --> Table
-    CreationIterationWidget --> Select
-    CreationIterationWidget --> Form
-    CreationIterationWidget --> ComboBox
-    CreationIterationWidget --> GlobalGrist
-    
-    ReponseBesoinOrgaWidget --> Html
-    ReponseBesoinOrgaWidget --> Utils
-    ReponseBesoinOrgaWidget --> GristActions
-    ReponseBesoinOrgaWidget --> Table
-    ReponseBesoinOrgaWidget --> Form
-    ReponseBesoinOrgaWidget --> ComboBox
-    ReponseBesoinOrgaWidget --> RadioGroup
-    ReponseBesoinOrgaWidget --> Version
-    ReponseBesoinOrgaWidget --> GlobalGrist
-    
-    ComboBox --> ComboboxConfig
-    ComboBox --> ComboboxInstance
-    ComboBox --> ComboboxItem
-    
-    Form --> FieldRule
-    RadioGroup --> RadioOption
-    RadioGroup --> RadioGroupRule
-    
-    CreationIterationWidget --|> WidgetOptions
-    ReponseBesoinOrgaWidget --|> WidgetOptions
-    
-    ReponseBesoinOrgaWidget --> Exigence
-    ReponseBesoinOrgaWidget --> BesoinOrga
-    
-    Table --> GristActions
-    GristActions --> GlobalGrist
-    Select --> Table
+```plantuml
+@startuml WidgetGRIST_Library_Classes
+!define BGCOLOR_CLASS #E3F2FD
+!define BGCOLOR_INTERFACE #BBDEFB
+
+skinparam backgroundColor #FAFAFA
+skinparam classBackgroundColor #E3F2FD
+skinparam classBorderColor #1976D2
+skinparam arrowColor #1976D2
+
+package "lib" {
+
+  ' ===== CORE UTILITIES =====
+  class Html {
+    {static} +escapeHtml(value: any): string
+    {static} +createElement(tag: string, attrs?: Record, content?: any): HTMLElement
+    {static} +clearElement(el: HTMLElement): void
+  }
+
+  class Utils {
+    {static} +indexBy(items: T[], keyFn: (T) => K, valueFn?: (T) => V): Map<K, V>
+    {static} +groupBy(items: T[], keyFn: (T) => string): Record<string, T[]>
+    {static} +sleep(ms: number): Promise<void>
+    {static} +coalesce(value: T|null|undefined, fallback: T): T
+  }
+
+  ' ===== GRIST INTEGRATION =====
+  class GristActions {
+    {static} +applyActions(actions: any[]): Promise<any[]>
+    {static} +addRecord(tableName: string, fields: Record): Promise<number>
+    {static} +updateRecord(tableName: string, id: number, fields: Record): Promise<void>
+    {static} +upsertRecord(tableName: string, id: number|null, fields: Record): Promise<number>
+    {static} +buildUpsertAction(tableName: string, id: number|null, fields: Record): Array
+  }
+
+  class Table {
+    {static} +fetchTableRows(tableName: string): Promise<Array<Record>>
+  }
+
+  class Select {
+    {static} +fetchDistinctValues(tableName: string, columnName: string): Promise<string[]>
+    {static} +populateSelect(selectEl: HTMLSelectElement, tableName: string, columnName: string, placeholder?: string): Promise<void>
+  }
+
+  class Version {
+    {static} +nextVersion(besoinList: Array): string
+    {static} +populateVersionSelect(selectEl: HTMLSelectElement, besoinList: Array, currentId: number): void
+  }
+
+  ' ===== FORM COMPONENTS =====
+  class Form {
+    {static} +showFeedback(feedbackEl: HTMLElement, msg: string, type: string, duration?: number): void
+    {static} +setLoadingState(loadingEl: HTMLElement, containerEl: HTMLElement, state: string): void
+    {static} +validateForm(rules: FieldRule[]): boolean
+    {static} +clearValidation(rules: FieldRule[]): void
+    {static} +toUnixTimestamp(dateStr: string, timeStr?: string): number|null
+  }
+
+  class ComboBox {
+    {static} +initCombobox(config: ComboboxConfig): ComboboxInstance
+  }
+
+  class RadioGroup {
+    {static} +renderRadioGroupHTML(groupName: string, options: RadioOption[], selected?: string, disabled?: boolean): string
+    {static} +getRadioValue(groupName: string): string|null
+    {static} +validateRadioGroups(groups: RadioGroupRule[]): boolean
+    {static} +resetRadioGroup(groupName: string, groupId: string, errId: string, value?: string): void
+  }
+
+  ' ===== TYPE DEFINITIONS =====
+  class ComboboxItem {
+    +id: number
+    +name: string
+  }
+
+  class ComboboxConfig {
+    +searchInput: HTMLInputElement
+    +hiddenInput: HTMLInputElement
+    +dropdown: HTMLElement
+    +errorEl?: HTMLElement
+    +getItems: () => ComboboxItem[]
+    +filterMode?: 'startsWith' | 'includes'
+  }
+
+  class ComboboxInstance {
+    +reset(): void
+    +select(item: ComboboxItem): void
+    +getSelected(): ComboboxItem | null
+  }
+
+  class FieldRule {
+    +fieldId: string
+    +errId: string
+    +visualId?: string
+    +validator?: (value: string) => boolean
+  }
+
+  class RadioOption {
+    +value: string
+    +label: string
+  }
+
+  class RadioGroupRule {
+    +groupName: string
+    +groupId: string
+    +errId: string
+  }
+
+  ' ===== RELATIONSHIPS =====
+  ComboBox --> ComboboxConfig
+  ComboBox --> ComboboxInstance
+  ComboBox --> Html : uses
+  ComboBox --> ComboboxItem
+
+  RadioGroup --> RadioOption
+  RadioGroup --> RadioGroupRule
+  RadioGroup --> Html : uses
+
+  Form --> FieldRule
+
+  GristActions --> Table : uses
+  Select --> Table : uses
+
+  ComboboxConfig --> ComboboxItem
+  ComboboxInstance --> ComboboxItem
+
+}
+
+@enduml
 ```
 
-## 🔗 Conventions de nommage
+## 🎨 Diagramme de Classe - Widgets
 
-### Fichiers et dossiers
-- **Minuscules avec `.js`, `.css`, `.html`** : `comboBox.js`, `creationIteration.js`
-- **Dossiers widgets** : `camelCase` pour les noms composés (`creationIteration`, `reponseBesoinOrga`)
+```plantuml
+@startuml WidgetGRIST_Widgets_Classes
+!define BGCOLOR_WIDGET #C8E6C9
+!define BGCOLOR_STATE #FFF9C4
 
-### Classes et objets
-- **Pseudo-classes (objets config)** : `ComboboxConfig`, `FieldRule`, `RadioGroupRule`
-- **Instances** : `workgroupCombo`, `allWorkgroups`, `currentExigences`
+skinparam backgroundColor #FAFAFA
+skinparam classBackgroundColor #C8E6C9
+skinparam classBorderColor #388E3C
+skinparam arrowColor #388E3C
 
-### Fonctions
-- **Exports** : `camelCase`, explicites et verbes actifs
-  - `initCombobox()`, `fetchTableRows()`, `showFeedback()`
-  - `validateForm()`, `renderRadioGroupHTML()`
-- **Privées/Internes** : préfixe `_` ou commentaire `// ──`
+package "widgets" {
 
-### Variables
-- **Collections plurielles** : `allWorkgroups`, `allCDC`, `allExigences`
-- **Identifiants** : suffixe `Id` pour les nombres
-  - `exigenceId`, `currentBesoinOrgaId`, `cdcId`
-- **Maps/Index** : suffixe `Map` ou `ByX`
-  - `existingReponsesMap`, `exigenceMap`
+  ' ===== SHARED STRUCTURES =====
+  class WidgetOptions {
+    +title: string
+    +color: string
+    +tableName?: string
+    +[key: string]: any
+  }
 
-### DOM Elements
-- **Préfixe `el`** : regroupement en objet singleton
-  ```javascript
-  const el = {
-    widgetContainer: document.getElementById('widget-container'),
-    feedback: document.getElementById('feedback'),
-    submitBtn: document.getElementById('submit-btn'),
-  };
-  ```
+  class WidgetElement {
+    +loading: HTMLElement
+    +widgetContainer: HTMLElement
+    +widgetTitle: HTMLElement
+    +feedback: HTMLElement
+    +configPanel: HTMLElement
+  }
 
-## 📘 Flux de données type
+  class WidgetState {
+    -options: WidgetOptions
+    -data: Map<string, any>
+    -ui: WidgetElement
+  }
 
-### Widget `reponseBesoinOrga` (exemple complet)
+  ' ===== CREATION ITERATION WIDGET =====
+  class CreationIterationWidget {
+    --
+    -options: WidgetOptions
+    -allWorkgroups: ComboboxItem[]
+    -workgroupCombo: ComboboxInstance
+    --
+    +loadWorkgroups(): Promise<void>
+    +loadSoftwares(): Promise<void>
+    +loadSelectData(): Promise<void>
+    +applyOptions(opts: WidgetOptions): void
+    -validateForm(): boolean
+    -submitForm(event: Event): Promise<void>
+  }
+
+  ' ===== RESPONSE BESOIN ORGA WIDGET =====
+  class BesoinOrgaResponse {
+    +id: number
+    +CDC: number
+    +Organisation: number
+    +Version: string
+    +IsValid: boolean
+  }
+
+  class Exigence {
+    +exigenceCDCId: number
+    +exigenceId: number
+    +nom: string
+  }
+
+  class ReponseBesoinOrgaWidget {
+    --
+    -options: WidgetOptions
+    -allCDC: ComboboxItem[]
+    -allOrganisations: ComboboxItem[]
+    -allExigencesCDC: any[]
+    -allExigences: any[]
+    -allBesoinOrga: BesoinOrgaResponse[]
+    -allReponseBesoinOrga: any[]
+    --
+    -currentPairBesoin: BesoinOrgaResponse[]
+    -currentBesoinOrgaId: number | null
+    -existingReponsesMap: Map<number, any>
+    -currentExigences: Exigence[]
+    --
+    +loadAllData(): Promise<void>
+    +renderExigences(exigences: Exigence[], isLocked: boolean): void
+    +loadExigencesForCurrentBesoin(): void
+    +validateSelection(): boolean
+    +isCurrentBesoinLocked(): boolean
+    +refreshReponsesMap(): void
+    +updateIsValidDisplay(besoin: BesoinOrgaResponse): void
+    +updateCountBadge(): void
+    -handleLoadBesoin(): Promise<void>
+    -handleVersionChange(): void
+    -handleNewVersion(): Promise<void>
+    -handleValidateVersion(): Promise<void>
+    -handleReset(): void
+    -handleSubmit(): Promise<void>
+  }
+
+  ' ===== RELATIONSHIPS =====
+  CreationIterationWidget --> WidgetOptions : uses
+  CreationIterationWidget --> WidgetElement : uses
+  CreationIterationWidget --> ComboboxItem
+  CreationIterationWidget --> ComboboxInstance
+
+  ReponseBesoinOrgaWidget --> WidgetOptions : uses
+  ReponseBesoinOrgaWidget --> WidgetElement : uses
+  ReponseBesoinOrgaWidget --> ComboboxItem
+  ReponseBesoinOrgaWidget --> BesoinOrgaResponse
+  ReponseBesoinOrgaWidget --> Exigence
+  ReponseBesoinOrgaWidget --> WidgetState : manages
+
+  WidgetState --> WidgetOptions
+  WidgetState --> WidgetElement
+
+}
+
+@enduml
+```
+
+## 🔗 Diagramme de Flux - Dépendances Complètes
+
+```plantuml
+@startuml WidgetGRIST_Dependencies
+!define BGCOLOR_API #FFCCBC
+!define BGCOLOR_LIB #E1F5FE
+!define BGCOLOR_WIDGET #C8E6C9
+!define BGCOLOR_TYPE #FFF9C4
+
+skinparam backgroundColor #FAFAFA
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageBorderColor #424242
+
+package "🌐 Grist Plugin API" <<API>> #FFCCBC {
+  [grist.docApi.applyUserActions]
+  [grist.docApi.fetchTable]
+  [grist.ready]
+  [grist.onOptions]
+  [grist.setOptions]
+}
+
+package "📦 lib (Bibliothèque)" <<LIB>> #E1F5FE {
+  package "Core Utilities" #E3F2FD {
+    [html.js]
+    [utils.js]
+  }
+
+  package "Grist Integration" #E3F2FD {
+    [gristActions.js]
+    [table.js]
+    [select.js]
+    [version.js]
+  }
+
+  package "Form Components" #E3F2FD {
+    [form.js]
+    [comboBox.js]
+    [radioGroup.js]
+  }
+}
+
+package "🎨 widgets (Spécifiques)" <<WIDGET>> #C8E6C9 {
+  [creationIteration.js]
+  [reponseBesoinOrga.js]
+}
+
+' Dépendances internes à lib
+[gristActions.js] --> [table.js] : uses
+[select.js] --> [table.js] : uses
+[comboBox.js] --> [html.js] : uses
+[radioGroup.js] --> [html.js] : uses
+
+' Dépendances lib vers API
+[gristActions.js] --> [grist.docApi.applyUserActions]
+[table.js] --> [grist.docApi.fetchTable]
+[select.js] --> [grist.docApi.fetchTable]
+
+' Dépendances Widget 1 vers lib
+[creationIteration.js] --> [table.js]
+[creationIteration.js] --> [select.js]
+[creationIteration.js] --> [comboBox.js]
+[creationIteration.js] --> [form.js]
+
+' Dépendances Widget 1 vers API
+[creationIteration.js] --> [grist.docApi.applyUserActions]
+[creationIteration.js] --> [grist.ready]
+[creationIteration.js] --> [grist.onOptions]
+[creationIteration.js] --> [grist.setOptions]
+
+' Dépendances Widget 2 vers lib
+[reponseBesoinOrga.js] --> [table.js]
+[reponseBesoinOrga.js] --> [comboBox.js]
+[reponseBesoinOrga.js] --> [form.js]
+[reponseBesoinOrga.js] --> [radioGroup.js]
+[reponseBesoinOrga.js] --> [gristActions.js]
+[reponseBesoinOrga.js] --> [html.js]
+[reponseBesoinOrga.js] --> [utils.js]
+[reponseBesoinOrga.js] --> [version.js]
+
+' Dépendances Widget 2 vers API
+[reponseBesoinOrga.js] --> [grist.docApi.applyUserActions]
+[reponseBesoinOrga.js] --> [grist.ready]
+[reponseBesoinOrga.js] --> [grist.onOptions]
+[reponseBesoinOrga.js] --> [grist.setOptions]
+
+@enduml
+```
+
+## 📋 Conventions de Nommage
+
+### **Fichiers et Dossiers**
+| Type | Convention | Exemple |
+|------|-----------|---------|
+| Modules lib | `camelCase.js` | `comboBox.js`, `gristActions.js` |
+| Widgets | `camelCase.js` | `creationIteration.js` |
+| Dossiers widgets | `camelCase/` | `creationIteration/`, `reponseBesoinOrga/` |
+| Styles | `camelCase.css` | `creationIteration.css` |
+
+### **Code JavaScript**
+| Type | Convention | Exemple |
+|------|-----------|---------|
+| Fonctions exportées | Verbe actif + `camelCase` | `initCombobox()`, `fetchTableRows()`, `showFeedback()` |
+| Classes/Prototypes | `PascalCase` | `ComboboxConfig`, `FieldRule` |
+| Variables collections | Pluriel + `camelCase` | `allWorkgroups`, `currentExigences`, `allCDC` |
+| Identifiants | Suffixe `Id` | `exigenceId`, `cdcId`, `currentBesoinOrgaId` |
+| Maps/Index | Suffixe `Map` ou `By` | `existingReponsesMap`, `exigenceMap` |
+| Éléments DOM | Préfixe `el` + clé | `el.feedback`, `el.submitBtn`, `el.widgetContainer` |
+| Booléens | Préfixe `is` ou suffixe `ed` | `isLocked`, `isValid`, `isLoading` |
+
+### **Modèle DOM Elements**
+```javascript
+const el = {
+  // État
+  loading: document.getElementById('loading'),
+  widgetContainer: document.getElementById('widget-container'),
+
+  // Affichage
+  widgetTitle: document.getElementById('widget-title'),
+  feedback: document.getElementById('feedback'),
+
+  // Formulaires
+  form: document.getElementById('form'),
+  submitBtn: document.getElementById('submit-btn'),
+
+  // Configuration
+  configPanel: document.getElementById('config-panel'),
+};
+```
+
+## 🔄 Flux de Données - Exemple `reponseBesoinOrga`
 
 ```
-1. [Initialisation]
-   grist.ready() → grist.onOptions()
-   └─ applyOptions(opts)
-   └─ loadAllData()
-      ├─ fetchTableRows('CahierDesCharges')
-      ├─ fetchTableRows('Organisation')
-      ├─ fetchTableRows('Exigence')
-      ├─ fetchTableRows('ExigenceCDC')
-      ├─ fetchTableRows('BesoinOrga')
-      └─ fetchTableRows('ReponseBesoinOrga')
+┌─────────────────────────────────────────────────────────────┐
+│ 1. INITIALISATION                                           │
+├─────────────────────────────────────────────────────────────┤
+│ grist.ready()                                               │
+│   ↓                                                          │
+│ grist.onOptions(opts)                                       │
+│   ↓                                                          │
+│ applyOptions(opts)                                          │
+│   ↓                                                          │
+│ loadAllData()                                               │
+│   ├─ fetchTableRows('CahierDesCharges')                    │
+│   ├─ fetchTableRows('Organisation')                        │
+│   ├─ fetchTableRows('Exigence')                            │
+│   ├─ fetchTableRows('ExigenceCDC')                         │
+│   ├─ fetchTableRows('BesoinOrga')                          │
+│   └─ fetchTableRows('ReponseBesoinOrga')                   │
+└─────────────────────────────────────────────────────────────┘
 
-2. [Sélection CDC + Organisation]
-   User input → el.loadBtn.click()
-   ├─ validateSelection() ← Form.validateForm()
-   ├─ addRecord() ← gristActions.js ← GristAPI
-   └─ currentPairBesoin = [BesoinOrga]
-   └─ populateVersionSelect()
+┌─────────────────────────────────────────────────────────────┐
+│ 2. CHARGEMENT BESOIN                                        │
+├─────────────────────────────────────────────────────────────┤
+│ el.loadBtn.click()                                          │
+│   ↓                                                          │
+│ validateSelection() [Form.validateForm]                     │
+│   ↓                                                          │
+│ (Si nouveau) addRecord(BesoinOrga) [GristActions]          │
+│   ↓                                                          │
+│ populateVersionSelect() [Version]                           │
+│   ↓                                                          │
+│ updateIsValidDisplay() + loadExigencesForCurrentBesoin()   │
+└─────────────────────────────────────────────────────────────┘
 
-3. [Affichage des exigences]
-   loadExigencesForCurrentBesoin()
-   ├─ indexBy(allExigences) ← Utils.indexBy()
-   ├─ renderExigences() → renderRadioGroupHTML()
-   └─ updateCountBadge()
+┌─────────────────────────────────────────────────────────────┐
+│ 3. AFFICHAGE EXIGENCES                                      │
+├─────────────────────────────────────────────────────────────┤
+│ loadExigencesForCurrentBesoin()                             │
+│   ↓                                                          │
+│ refreshReponsesMap() [Utils.indexBy]                        │
+│   ↓                                                          │
+│ renderExigences()                                           │
+│   ├─ renderRadioGroupHTML() [RadioGroup]                   │
+│   ├─ escapeHtml() [Html] - sécurité XSS                   │
+│   └─ updateCountBadge()                                    │
+└─────────────────────────────────────────────────────────────┘
 
-4. [Validation et soumission]
-   el.submitBtn.click()
-   ├─ validateRadioGroups() ← RadioGroup.validateRadioGroups()
-   ├─ buildUpsertAction() ← GristActions
-   ├─ applyActions() → GristAPI.applyUserActions()
-   └─ showFeedback() ← Form.showFeedback()
+┌─────────────────────────────────────────────────────────────┐
+│ 4. VALIDATION ET SOUMISSION                                 │
+├─────────────────────────────────────────────────────────────┤
+│ el.submitBtn.click()                                        │
+│   ↓                                                          │
+│ validateRadioGroups() [RadioGroup]                          │
+│   ↓                                                          │
+│ Construire actions [GristActions.buildUpsertAction]        │
+│   ├─ AddRecord si nouvelle réponse                         │
+│   └─ UpdateRecord si existante                             │
+│   ↓                                                          │
+│ applyActions() [GristActions]                               │
+│   ↓                                                          │
+│ grist.docApi.applyUserActions() [Grist API]               │
+│   ↓                                                          │
+│ showFeedback() [Form]                                       │
+│   ↓                                                          │
+│ refreshReponsesMap() + renderExigences()                    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
