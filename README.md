@@ -40,6 +40,13 @@ WidgetGRIST/
         └── deploy.yml
 ```
 
+## Lien à mettre dans GRIST
+
+- création d'itérations :
+- création de cahier des charges :
+- réponse besons organisations :
+- réponses bilan de softwares :
+
 ## 📊 Architecture du Projet
 
 ```mermaid
